@@ -1,0 +1,110 @@
+name: Build Android APK
+
+# push 到 main 自动构建；也允许在 Actions 页面手动触发。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 同一分支连续推送时，取消上一次还在跑的构建，
+# 避免排队堆积（APK 构建本身要几分钟）。
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+
+    # 前端是子目录 web/，所有 npm/cap/gradle 命令都要在它下面跑。
+    # 把它提成变量，避免每个 step 里重复写 working-directory。
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node 22 而不是 20 —— 这不是随意选的。
+      # @capacitor/cli 8.6.2 的 engines 是 ">=22.0.0"，在 Node 20 上
+      # `npx cap sync`（"Sync web assets"那一步）会直接报引擎不兼容而失败。
+      # Vite 8 要求 "^20.19.0 || >=22.12.0"，所以 22 是两个依赖的
+      # 唯一交集。要改回 Node 20 的话，必须同时把 Capacitor 降到 7.x。
+      #
+      # cache 指向前端的 lockfile：根目录没有 package-lock.json，
+      # 不指定的话 setup-node 会找不到缓存键而报错。
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # Java 21 而不是 17。
+      # capacitor-cordova-android-plugins/build.gradle 里写的是
+      #   sourceCompatibility = JavaVersion.VERSION_21
+      # 用 JDK 17 编译会直接报 "invalid source release: 21"。
+      # AGP 8.13 本身也支持 JDK 21。要改回 17 的话，
+      # 得同时把 capacitor-cordova-android-plugins 里的
+      # VERSION_21 改成 VERSION_17。
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # setup-android 只装 cmdline-tools，不装 SDK Platform。
+      # 本工程的 compileSdk 是 36（见 android/variables.gradle），
+      # runner 镜像里不一定预装这个平台，缺了会报
+      # "Failed to find target with hash string 'android-36'"。
+      # 显式装一次最稳妥；已存在时 sdkmanager 会跳过，几乎不耗时。
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      # npm ci 要求 lockfile 与 package.json 完全一致，且会删掉 node_modules。
+      # 这比 npm install 更适合 CI：可复现、更快、能发现锁文件漂移。
+      - name: Install dependencies
+        run: npm ci
+
+      # VITE_API_BASE：打包后 WebView 没有 Vite 代理，
+      # 相对路径 /api/* 会打到 App 自己的资源服务器上，全部 404。
+      #
+      # 在仓库 Settings → Variables 里配一个 VITE_API_BASE
+      # （例如 http://192.168.1.10:3090）就能连到自己的后端。
+      # 不配也能构建成功，但装到手机上会连不上服务端——
+      # 所以下面把实际注入的值打出来，方便排查。
+      - name: Build web
+        run: |
+          echo "VITE_API_BASE = '${VITE_API_BASE}'"
+          if [ -z "$VITE_API_BASE" ]; then
+            echo "::warning::VITE_API_BASE 未配置，APK 内请求将走相对路径 /api，无法连到后端。请在仓库 Variables 中设置它。"
+          fi
+          npm run build
+        env:
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+
+      - name: Sync web assets into Android project
+        run: npx cap sync android
+
+      # android/ 目录已经包含在仓库里（cap add android 的产物）。
+      # 所以这里不需要再执行 cap add。
+      - name: Build APK
+        working-directory: web/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          # 注意路径是相对于仓库根目录（不是上面的 web/），
+          # 所以要用 web/android/... 全路径。
+          path: web/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30

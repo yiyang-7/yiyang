@@ -1,0 +1,83 @@
+/**
+ * 历史加载骨架屏。
+ *
+ * 配色沿用微信那套：白色气泡、浅绿自己的气泡、灰底。
+ * 流光用 background-position 平移（不是 transform），
+ * 这样扫过的是渐变本身，不需要额外叠一层 mask。
+ */
+
+.wrap {
+  padding: 16px 14px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+/* 自己的消息靠右，和真实气泡一致 */
+.rowMe {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: #e6e6ea;
+}
+
+.bubble {
+  height: 34px;
+  border-radius: 8px;
+  background: #ececf0;
+}
+
+/* 自己那一侧用绿调，颜色很浅，和真气泡拉开层次但不抢眼 */
+.bubbleMe {
+  background: #d9f2c9;
+}
+
+/* 流光：两块占了位的灰色渐变横向平移 */
+.avatar,
+.bubble {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 220px 100%;
+  background-repeat: no-repeat;
+  background-position: -220px 0;
+  animation: sweep 1.4s ease-in-out infinite;
+}
+
+.hint {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #9a9aa4;
+}
+
+@keyframes sweep {
+  to {
+    background-position: calc(100% + 220px) 0;
+  }
+}
+
+/* 减少动态效果：不扫光，保留静态占位块 */
+@media (prefers-reduced-motion: reduce) {
+  .avatar,
+  .bubble {
+    animation: none;
+  }
+}

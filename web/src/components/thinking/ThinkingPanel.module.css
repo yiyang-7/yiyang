@@ -1,0 +1,33 @@
+/**
+ * 深度思考面板：只管内容区。
+ *
+ * 标题行的排版、hover 色、chevron、流光动画全部由官方
+ * DisclosureRow 负责（自带 CSS Module，不依赖外部主题），
+ * 这里不要再覆盖，否则升级官方包时会打架。
+ */
+
+.wrap {
+  /* 面板与下方正文之间留一点呼吸 */
+  margin-bottom: 8px;
+}
+
+.body {
+  /* 思考可能很长，限高避免把正文挤出屏幕 */
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 2px 0 6px;
+}
+
+.text {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #86868f;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* StateDot 是 inline 元素，和文字之间留一点距离 */
+.text > *:last-child:not(:only-child) {
+  margin-left: 4px;
+  vertical-align: middle;
+}

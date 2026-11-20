@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      interactive-widget=resizes-content：安卓 Chrome 上软键盘弹起时压缩视口，
+      而不是覆盖在页面上，输入框才不会被键盘挡住。
+      maximum-scale=1 避免 iOS 聚焦输入框时自动缩放页面。
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <title>AI 聊天</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

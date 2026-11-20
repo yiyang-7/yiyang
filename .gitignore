@@ -1,0 +1,35 @@
+# ── 依赖 ────────────────────────────────────────
+node_modules/
+
+# ── 构建产物 ────────────────────────────────────
+dist/
+# SSR 测试用的临时目录
+.ssr-*/
+
+# ── Android 构建产物 ────────────────────────────
+# 注意：android/ 本身必须提交（含 gradle wrapper 和 native 模板），
+# 只忽略它产生的中间文件。CI 依赖仓库里已有的 android/ 工程。
+web/android/.gradle/
+web/android/build/
+web/android/app/build/
+web/android/local.properties
+web/android/capacitor-cordova-android-plugins/build/
+*.apk
+*.aab
+
+# ── 运行时数据（含对话历史，不该进仓库）────────
+*.db
+*.db-shm
+*.db-wal
+.dsh-sessions/
+
+# ── 本地/编辑器 ─────────────────────────────────
+.env
+.env.*
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# 本地覆盖的配置（可能含真实密钥），主配置 server.config.json 可以提交
+server.config.local.json

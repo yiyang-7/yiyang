@@ -1,0 +1,229 @@
+.wrap {
+  flex: 0 0 auto;
+  padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #f0f0f4;
+}
+
+/* 输入卡片：DeepSeek 的圆角胶囊容器 */
+.card {
+  border: 1px solid #e4e4ec;
+  border-radius: 22px;
+  background: #fff;
+  padding: 8px 10px 8px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:focus-within {
+  border-color: #c9d2f7;
+  box-shadow: 0 0 0 3px rgba(77, 107, 254, 0.08);
+}
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 24px;
+  max-height: 132px;          /* ≈ 6 行 */
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  overflow-y: hidden;
+}
+
+.input::placeholder {
+  color: #a8a8b8;
+}
+
+/* ── 卡片底行：左侧开关 + 右侧圆形按钮 ─────────── */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.toggles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.toggles::-webkit-scrollbar {
+  display: none;
+}
+
+/* 药丸型开关 */
+.toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid #e4e4ec;
+  border-radius: 15px;
+  background: #fff;
+  color: #5b5b6b;
+  font-size: 12.5px;
+  white-space: nowrap;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.toggle:hover:not(:disabled) {
+  background: #f6f6fa;
+}
+
+.toggleOn {
+  background: #eef1ff;
+  border-color: #c3cdfb;
+  color: #3b53d9;
+  font-weight: 500;
+}
+
+.toggleOn:hover:not(:disabled) {
+  background: #e6ebff;
+}
+
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 未接入后端的开关：右下角一个小点，hover 有提示 */
+.toggleUnsupported {
+  position: relative;
+}
+
+.toggleUnsupported::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffb020;
+}
+
+/* ── 圆形图标按钮 ───────────────────────────── */
+.iconBtn {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #6b6b7b;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: #f2f2f7;
+  color: #33333d;
+}
+
+.iconBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 发送按钮：蓝色圆形，DeepSeek 的样式 */
+.send {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #4d6bfe;
+  color: #fff;
+  transition: background 0.14s ease, transform 0.1s ease;
+}
+
+.send:hover:not(:disabled) {
+  background: #3f5bf0;
+}
+
+.send:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* 无内容：置灰 */
+.send:disabled {
+  background: #e8e8ef;
+  color: #b8b8c8;
+  cursor: not-allowed;
+}
+
+/* 停止生成：红色，和发送按钮的蓝色明显区分开。
+   生成过程中这个按钮的语义是"打断"，用品牌蓝会被当成普通操作。 */
+.stop {
+  background: #f5222d;
+  color: #fff;
+}
+
+.stop:hover {
+  background: #d9363e;
+}
+
+.stop:focus-visible {
+  outline: 2px solid #f5222d;
+  outline-offset: 2px;
+}
+
+/* ── 附件预览 ───────────────────────────────── */
+.attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #f4f4f9;
+  font-size: 12px;
+  color: #5b5b6b;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.attachmentName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachmentRemove {
+  border: none;
+  background: transparent;
+  color: #8b8b9b;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.attachmentRemove:hover {
+  color: #33333d;
+}
+
+/* 底部说明行 */
+.hint {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 10.5px;
+  color: #b4b4c2;
+}

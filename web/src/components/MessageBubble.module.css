@@ -1,0 +1,250 @@
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 5px 14px;
+  /* 消息多时不要因为动画堆叠导致滚动卡顿 */
+  contain: layout style;
+}
+
+.rowUser {
+  flex-direction: row-reverse;
+}
+
+/* ── 圆形头像 ─────────────────────────────────── */
+.avatar {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;          /* 圆形，用户明确要求 */
+  overflow: hidden;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  line-height: 1;
+  user-select: none;
+  /* 顶部对齐到气泡首行，而不是整块居中 */
+  margin-top: 2px;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── 气泡列 ───────────────────────────────────── */
+.col {
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100% - 60px);
+  min-width: 0;
+}
+
+.colUser {
+  align-items: flex-end;
+}
+
+.bubble {
+  position: relative;
+  padding: 9px 13px;
+  border-radius: 8px;          /* 微信风格的圆角 */
+  background: var(--wx-white);
+  color: var(--wx-text);
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.bubbleUser {
+  background: var(--wx-green);
+}
+
+/* 气泡小尖角，微信的标志性细节 */
+.bubble::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+}
+
+/* 左侧白气泡：尖角朝左，贴着头像 */
+.bubbleLeft::before {
+  left: -11px;
+  border-right-color: var(--wx-white);
+}
+
+/* 右侧绿气泡：尖角朝右 */
+.bubbleRight::before {
+  right: -11px;
+  border-left-color: var(--wx-green);
+}
+
+.meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--wx-text-sub);
+  padding: 0 2px;
+}
+
+.metaError {
+  color: var(--wx-red);
+}
+
+/* ── 等待首个字：三点动画 + 文案 ───────────────── */
+.pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pendingText {
+  font-size: 13.5px;
+  color: #8a8a9a;
+}
+
+/* ── 等待首个字时的打字指示 ───────────────────── */
+.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+}
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b6b6b6;
+  animation: blink 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* ── 流式输出时的光标 ─────────────────────────── */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 15px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--wx-text);
+  animation: caretBlink 0.9s step-end infinite;
+}
+
+@keyframes caretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing span,
+  .caret {
+    animation: none;
+  }
+}
+/* ── Markdown 正文 ──────────────────────────────
+ * 气泡本身是 white-space: pre-wrap（用户手打换行要保留），
+ * 但 Markdown 渲染出来的是块级元素，pre-wrap 会让每个换行符号
+ * 又多出一行空白。这里把它重置回 normal。
+ */
+.markdown {
+  white-space: normal;
+}
+
+/* Markdown 元素自带的上下外边距在气泡里太松，收一收 */
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── 气泡操作栏（重新生成 / 复制）─────────────────
+ * 刻意做得很轻：默认半透明，悬停才变实。
+ * 这两颗按钮是辅助操作，不该和正文抢注意力。
+ */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+  padding-left: 2px;
+  /* 淡入，避免流式结束的瞬间突然跳出来 */
+  animation: actionsIn 0.16s ease-out;
+}
+
+@keyframes actionsIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #9aa0a6;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  /* 触屏上不要出现蓝色高亮块 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #4a4f55;
+}
+
+.action:active {
+  background: rgba(0, 0, 0, 0.09);
+}
+
+.action:focus-visible {
+  outline: 2px solid #4d6bfe;
+  outline-offset: 1px;
+}
+
+/* 复制成功：短暂变绿，给一个明确的反馈 */
+.actionDone,
+.actionDone:hover {
+  color: #00a854;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions { animation: none; }
+}

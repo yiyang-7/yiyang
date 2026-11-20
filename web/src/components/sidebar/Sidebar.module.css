@@ -1,0 +1,56 @@
+/**
+ * 抽屉外壳：遮罩、面板容器、滑入动画、宽度。
+ *
+ * 面板内部的内容与样式在 SidebarContent.jsx / SidebarContent.module.css。
+ * 这里的 .sidebar 是 flex 纵向容器，给内容提供布局上下文。
+ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: 40;
+  animation: fadeIn 0.18s ease-out;
+  border: none;
+  padding: 0;
+  cursor: default;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 272px;
+  max-width: 82vw;
+  background: #f9f9fb;
+  border-right: 1px solid #ececf1;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.06);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* ── 品牌区 ─────────────────────────────────── */
+
+/* 尊重「减少动效」系统设置：滑入改成淡入，去掉位移。
+   前庭功能敏感的用户会被大幅位移动画影响，这不是可选项。 */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    animation: fadeIn 0.12s ease-out;
+  }
+  .backdrop {
+    animation: none;
+  }
+}

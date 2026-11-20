@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "express": "^5.3.0",
+    "node-cron": "^4.6.0"
+  },
+  "name": "dsh-chat-gateway",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "把 DSH Harness 搬到服务端，客户端只讲 HTTP/SSE",
+  "scripts": {
+    "start": "node server.mjs",
+    "min": "node server.min.mjs",
+    "client": "node client.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}

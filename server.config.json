@@ -1,0 +1,16 @@
+{
+  "profile": "sdk",
+  "persona": {
+    "prefix": "You are a helpful assistant served through the DSH chat gateway.",
+    "suffix": "The caller's user id is passed in the request metadata; never invent it."
+  },
+  "llm": {
+    "provider": "deepseek-official",
+    "model": "deepseek-chat"
+  },
+  "idleTimeoutMs": 600000,
+  "maxProcesses": 8,
+  "turnTimeoutMs": 300000,
+  "dbPath": "history.db",
+  "reapIntervalMs": 60000
+}

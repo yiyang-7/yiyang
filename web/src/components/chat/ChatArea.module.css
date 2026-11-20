@@ -1,0 +1,264 @@
+/**
+ * 主聊天区样式：顶栏、对话列表、提示条、欢迎页、滚动锚点。
+ *
+ * 从 App.module.css 拆出。外壳（.app 的 flex 容器）仍在 App.module.css。
+ * 输入区样式在 deepseek/ChatInput.module.css，没有重复。
+ */
+
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  border-bottom: 1px solid #f4f4f8;
+  z-index: 3;
+}
+
+.navBtn {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #33333d;
+  transition: background 0.12s ease;
+}
+
+.navBtn:hover {
+  background: #f2f2f7;
+}
+
+.titleWrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+}
+
+.title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.titleSub {
+  font-size: 11px;
+  color: #9a9aa8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.onlineDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #07c160;
+}
+
+/* ── 对话区（微信气泡风，浅灰底） ─────────────── */
+/* 消息区外层：占满剩余高度，并作为浮标的定位参照。
+ * 它必须接住 flex:1 和 min-height:0 —— 套了一层之后，
+ * .list 自己不再参与外层 flex 分配，撑不开的话滚动会整个失效。 */
+.listWrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list {
+  flex: 1 1 auto;
+  min-height: 0;               /* 关键：否则 flex 子项撑破容器，滚不动 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--wx-bg);
+  padding: 12px 0 16px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── 「有新消息」浮标 ─────────────────────────
+ * 悬在消息区底部居中，避开输入框。
+ * 用微信的胶囊形状：白底 + 阴影，字小、留白足。
+ */
+.jumpBtn {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px 6px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: #4a4a58;
+  font-size: 12.5px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  animation: jumpIn 0.16s ease-out;
+  z-index: 5;
+}
+
+.jumpBtn:active {
+  background: #f2f2f6;
+}
+
+@keyframes jumpIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jumpBtn {
+    animation: none;
+  }
+}
+
+/* ── 欢迎页（没有消息时） ─────────────────────── */
+.welcome {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.welcomeLogo {
+  margin-bottom: 6px;
+}
+
+.welcomeTitle {
+  font-size: 19px;
+  font-weight: 600;
+  color: #1f1f28;
+}
+
+.welcomeSub {
+  font-size: 13px;
+  color: #8a8a9a;
+  line-height: 1.7;
+  max-width: 300px;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.suggestion {
+  padding: 8px 14px;
+  border: 1px solid #e4e4ec;
+  border-radius: 18px;
+  background: #fff;
+  color: #4a4a58;
+  font-size: 12.5px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.suggestion:hover {
+  background: #f6f6fa;
+  border-color: #c9d2f7;
+}
+
+/* 加载态已改由 HistorySkeleton 负责（骨架屏 + 流光），
+   原先的 .center / .spinner 转圈已删除。 */
+
+/* ── 提示条 ─────────────────────────────────── */
+.banner {
+  flex: 0 0 auto;
+  padding: 7px 16px;
+  font-size: 12px;
+  text-align: center;
+  background: #f7f7f9;
+  color: #6b6b7b;
+  border-top: 1px solid #f0f0f4;
+}
+
+.bannerError {
+  background: #fdecec;
+  color: #d33;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.bannerText {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.dismiss {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+  padding: 2px 4px;
+}
+
+.dismiss:hover {
+  opacity: 1;
+}
+
+.anchor {
+  height: 1px;
+}
+
+/* ── 时间分隔 ───────────────────────────────── */
+.timeSep {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+}
+
+.timeSep span {
+  font-size: 11.5px;
+  line-height: 1;
+  color: #a8a8a8;
+  background: rgba(0, 0, 0, 0.035);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* 桌面端给主区域一点居中约束，避免超宽屏气泡拉太长 */
+@media (min-width: 900px) {
+  .list > * {
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

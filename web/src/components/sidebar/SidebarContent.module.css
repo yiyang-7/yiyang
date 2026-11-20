@@ -1,0 +1,196 @@
+/**
+ * 侧边栏内容样式。
+ *
+ * 只管品牌、新建按钮、历史列表、页脚。
+ * 抽屉外壳（遮罩、滑入、宽度）在 Sidebar.module.css。
+ *
+ * 这些规则依赖父容器是 flex 纵向布局（.sidebar 提供），
+ * flex: 0 0 auto / flex: 1 才能生效。
+ */
+
+.brand {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 16px 12px;
+}
+
+.brandName {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: 0.2px;
+}
+
+/* ── 操作区 ─────────────────────────────────── */
+.actions {
+  flex: 0 0 auto;
+  padding: 0 12px 8px;
+}
+
+.actionBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border: 1px solid #e2e2ea;
+  border-radius: 10px;
+  background: #fff;
+  color: #2b2b33;
+  font-size: 14px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.actionBtn:hover {
+  background: #f2f2f7;
+  border-color: #d6d6e2;
+}
+
+/* ── 历史列表 ───────────────────────────────── */
+.sectionLabel {
+  flex: 0 0 auto;
+  padding: 10px 20px 6px;
+  font-size: 11.5px;
+  color: #9a9aa8;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 12px;
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #33333d;
+  font-size: 13.5px;
+  text-align: left;
+  margin-bottom: 1px;
+  transition: background 0.12s ease;
+}
+
+.item:hover {
+  background: #ededf4;
+}
+
+.itemActive {
+  background: #e3e8ff;
+  color: #2c46c8;
+  font-weight: 500;
+}
+
+.itemActive:hover {
+  background: #dbe2ff;
+}
+
+.itemIcon {
+  flex: 0 0 auto;
+  display: flex;
+  color: #9a9aa8;
+}
+
+.itemActive .itemIcon {
+  color: #4d6bfe;
+}
+
+.itemTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemTime {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: #b0b0bc;
+}
+
+.empty {
+  padding: 24px 20px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #b0b0bc;
+  line-height: 1.7;
+}
+
+/* ── 底部 ───────────────────────────────────── */
+.footer {
+  flex: 0 0 auto;
+  padding: 10px 16px 16px;
+  border-top: 1px solid #ececf1;
+  font-size: 11.5px;
+  color: #b0b0bc;
+}
+
+/* ── 未读红点 ─────────────────────────────────
+ * 微信那种红色圆角气泡，未读数直接写在里面。
+ * 位置在时间戳左边：标题占满剩余宽度，红点与时间都靠右挤着，
+ * 用 flex 的 auto 宽度自然实现，不写死坐标。
+ */
+.badge {
+  flex: 0 0 auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: #fa5151;        /* 微信未读红 */
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* ── 人设选择 ───────────────────────────────── */
+.contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 6px;
+}
+
+.contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid #e8e8ef;
+  border-radius: 999px;
+  background: #fafafc;
+  font-size: 12.5px;
+  color: #4a4a58;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.contact:hover {
+  background: #f0f3ff;
+  border-color: #c9d2f7;
+}
+
+.contactAvatar {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.contactName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

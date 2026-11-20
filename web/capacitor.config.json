@@ -1,0 +1,11 @@
+{
+  "appId": "com.senluo.dshchat",
+  "appName": "森萝",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
