@@ -55,16 +55,37 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # 不用 android-actions/setup-android@v3。
+      #
+      # 它内部会执行 `sdkmanager tools`，而 `tools` 这个包在
+      # cmdline-tools 16.0 里已被移除，于是整步直接失败：
+      #   Warning: Failed to find package 'tools'
+      #   Error: The process 'sdkmanager' failed with exit code 1
+      # 这是该 action 与新版 SDK 工具的兼容问题，不是本工程的问题。
+      #
+      # ubuntu-latest 镜像本身就预装了完整的 Android SDK
+      # （/usr/local/lib/android/sdk，ANDROID_HOME/ANDROID_SDK_ROOT 也已设好），
+      # 所以这里什么都不用装，确认一下即可。
+      - name: Verify Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "--- platforms ---"
+          ls "$ANDROID_HOME/platforms" 2>/dev/null | tail -5
+          echo "--- build-tools ---"
+          ls "$ANDROID_HOME/build-tools" 2>/dev/null | tail -5
 
-      # setup-android 只装 cmdline-tools，不装 SDK Platform。
-      # 本工程的 compileSdk 是 36（见 android/variables.gradle），
-      # runner 镜像里不一定预装这个平台，缺了会报
-      # "Failed to find target with hash string 'android-36'"。
-      # 显式装一次最稳妥；已存在时 sdkmanager 会跳过，几乎不耗时。
-      - name: Install Android SDK platform
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      # compileSdk 是 36（见 web/android/variables.gradle），
+      # 镜像里的平台版本不一定覆盖到，缺了才补装。
+      - name: Ensure SDK platform 36
+        run: |
+          set -e
+          if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
+            yes | sdkmanager --licenses > /dev/null 2>&1 || true
+            sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          else
+            echo "android-36 已预装"
+          fi
 
       # npm ci 要求 lockfile 与 package.json 完全一致，且会删掉 node_modules。
       # 这比 npm install 更适合 CI：可复现、更快、能发现锁文件漂移。
