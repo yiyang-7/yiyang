@@ -35,6 +35,27 @@ npm run build:demo     # → web/demo/演示版.html（约 4.6MB）
 
 双击就能打开。不需要 node、不需要起服务、断网也行。
 
+### 已修复的三个 bug
+
+**0. 演示版打不开（白屏）**
+
+根因是我自己在加快捷回复时引入的 **TDZ（暂时性死区）** 错误：
+
+```js
+const quickReplies = useMemo(
+  () => deriveQuickReplies(messages, contact),
+  [messages.length, lastLen, contact?.id],   // ← lastLen 还没声明
+);
+
+const lastLen = messages.length ? ... : 0;   // ← 声明在下面
+```
+
+浏览器抛 `ReferenceError: Cannot access 'k' before initialization`——
+压缩后变量名变成单字母，报错完全看不出位置。
+
+**这个 bug 之前所有测试都没抓到**，因为 SSR 渲染走的是不同代码路径。
+是接上真实 chromium 之后才暴露的。
+
 ### 已修复的两个 bug
 
 **1. 点击历史会话进不去聊天界面**

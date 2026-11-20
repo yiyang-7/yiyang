@@ -622,6 +622,40 @@ children.push(
   Rich('**表现是“对方回答一闪就没了”**，看起来像渲染 bug，实际是数据判定 bug。修法是让 `done` 帧必须携带完整正文，兜底只作为极端情况保护而不是常规路径。'),
 );
 
+children.push(H3('坑：压缩后的 TDZ 错误完全不可读'));
+children.push(
+  Rich('加「快捷回复」功能时，把 `lastLen` 写进了 `useMemo` 的依赖数组，但 `lastLen` 的声明在它下面几行。这是 **暂时的死区（TDZ）** 问题——变量还没初始化就被读取。'),
+);
+children.push(
+  ...Code(
+    `// 错：lastLen 在下面才声明
+const quickReplies = useMemo(
+  () => deriveQuickReplies(messages, contact),
+  [messages.length, lastLen, contact?.id],   // ← TDZ
+);
+const lastLen = messages.length ? ... : 0;`,
+    '问题代码',
+  ),
+);
+children.push(
+  Rich('浏览器的报错是：'),
+);
+children.push(
+  ...Code(
+    `ReferenceError: Cannot access 'k' before initialization`,
+    '压缩后的报错',
+  ),
+);
+children.push(
+  Rich('**变量名被压成一个字母，看不出任何上下文**。只能靠行号和列号回到产物里挖，才发现是 `useMemo` 依赖数组引用了未初始化的变量。'),
+);
+children.push(
+  Rich('更关键的是：**这个 bug 之前所有测试都没抓到**。SSR 渲染走得通，因为服务端渲染路径不触发那段 `useMemo`。只有真正在浏览器里跑一遍才会崩——表现为整页白屏，连错误提示都没有。'),
+);
+children.push(
+  Rich('修法是把声明移到使用之前。同时补上**浏览器烟测**：用真实 chromium 加载产物，断言 `#root` 有子节点、无 JS 错误、有可见文本。这类“白屏”问题只有真浏览器能发现。'),
+);
+
 children.push(H2('5.3 UI 类'));
 
 children.push(H3('坑：移动端 100vh 与软键盘'));

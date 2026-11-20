@@ -11,13 +11,15 @@
     "test:stream": "node scripts/e2e-streaming.mjs",
     "test:reasoning": "node scripts/e2e-reasoning.mjs",
     "test:history": "node scripts/e2e-history.mjs",
-    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs && node scripts/demo-test.mjs && node scripts/demo-features.mjs",
+    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs && node scripts/demo-test.mjs && node scripts/demo-features.mjs && node scripts/verify-demo.mjs",
     "test:mobile": "node scripts/mobile-layout.mjs",
     "android:sync": "vite build && cap sync android",
     "android:open": "cap open android",
     "android:apk": "vite build && cap sync android && cd android && ./gradlew assembleDebug",
     "build:demo": "VITE_DEMO=1 vite build && node scripts/build-demo.mjs",
-    "test:demo": "node scripts/demo-test.mjs"
+    "test:demo": "node scripts/demo-test.mjs",
+    "test:browser": "node scripts/verify-demo.mjs",
+    "test:flow": "node scripts/test-demo-flow.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",
@@ -54,6 +56,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.3.0",
-    "vite": "^8.3.8"
+    "vite": "^8.3.8",
+    "playwright-core": "^1.56.0"
   }
 }

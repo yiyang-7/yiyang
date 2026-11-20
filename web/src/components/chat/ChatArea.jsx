@@ -64,15 +64,19 @@ export default function ChatArea({
   // 用 lastLen 作为依赖的一部分，保证流式吐字期间不会每帧重算
   // （消息内容在变但长度没变时没必要算）。真人只在流结束后才看到
   // 建议，所以这里也不随逐字输出抖动。
+  // 注意：lastLen 必须先声明。放进 useMemo 的依赖数组时，
+  // 它仍是 TDZ（暂时性死区）状态，会抛
+  // ReferenceError: Cannot access 'lastLen' before initialization。
+  // 压缩后变量名变成单字母，报错信息完全看不出是哪一行。
+  const lastLen = messages.length
+    ? (messages[messages.length - 1].content || '').length
+    : 0;
+
   const quickReplies = useMemo(
     () => deriveQuickReplies(messages, contact),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [messages.length, lastLen, contact?.id],
   );
-
-  const lastLen = messages.length
-    ? (messages[messages.length - 1].content || '').length
-    : 0;
 
   // 阈值分开：贴底判定（120px）比浮标判定（240px）更宽松。
   // 用同一个阈值的话，稍微往回滚一点浮标就冒出来，

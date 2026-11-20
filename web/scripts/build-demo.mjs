@@ -60,12 +60,12 @@ if (leftover) {
 // ── 4. 加一段离线提示，避免被误认为在调真模型 ──
 const banner = `
 <div id="demo-badge" style="
-  position:fixed;right:12px;bottom:12px;z-index:9999;
-  background:rgba(17,24,39,.82);color:#fff;
-  font:12px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  padding:7px 12px;border-radius:8px;pointer-events:none;
-  letter-spacing:.2px;box-shadow:0 2px 8px rgba(0,0,0,.18);
-">演示版 · 本地数据，未连接模型</div>
+  position:fixed;left:10px;bottom:8px;z-index:50;
+  background:rgba(17,24,39,.7);color:#fff;
+  font:11px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  padding:5px 9px;border-radius:7px;pointer-events:none;
+  letter-spacing:.2px;
+">演示版 · 本地数据</div>
 `;
 html = html.replace('</body>', `${banner}</body>`);
 
