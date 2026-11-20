@@ -1,0 +1,107 @@
+/**
+ * 快捷回复胶囊。
+ *
+ * 视觉对齐 DeepSeek 输入框上方的建议条：浅底、圆角、无边框，
+ * 点击有轻微下压。整条横滑，窄屏不会挤成两行。
+ */
+
+.wrap {
+  padding: 0 12px 2px;
+  /* 在输入框上方，不参与滚动 */
+  flex: 0 0 auto;
+  animation: barIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.scroller {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  /* 隐藏滚动条但保留滚动能力 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 0 6px;
+  /* 左对齐起始，滑动自然 */
+  justify-content: flex-start;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  max-width: 260px;
+  padding: 7px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.028);
+  color: #1f2329;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+  /* 每个胶囊错峰入场 */
+  animation: chipIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip:hover {
+  background: rgba(0, 0, 0, 0.055);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.chip:active {
+  transform: scale(0.965);
+  background: rgba(0, 0, 0, 0.075);
+}
+
+.chip:focus-visible {
+  outline: 2px solid rgba(77, 107, 254, 0.5);
+  outline-offset: 2px;
+}
+
+.text {
+  /* 过长时省略，保持单行胶囊形状 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes barIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chipIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 尊重系统的减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .wrap,
+  .chip {
+    animation: none;
+  }
+  .chip:active {
+    transform: none;
+  }
+}

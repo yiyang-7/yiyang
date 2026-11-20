@@ -461,6 +461,13 @@ export function useChat(contact, activeConversationId) {
                 break;
               }
 
+              case 'notice': {
+                // 非致命提示（例如演示版真连接口失败后退回内置回复）。
+                // 用 statusHint 而不是 error：对话还在继续，不该弹错误条。
+                setStatusHint(data.text ?? '');
+                break;
+              }
+
               case 'error': {
                 streamDoneRef.current = true;
                 const msg =

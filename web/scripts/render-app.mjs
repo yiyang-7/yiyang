@@ -248,7 +248,9 @@ check('AI 在左（bubbleLeft）', aiLogo.includes('bubbleLeft'));
 check('AI 白气泡（不含 bubbleUser）', !aiLogo.includes('bubbleUser'));
 check('用户在右（bubbleRight）', userB.includes('bubbleRight'));
 check('用户绿气泡（bubbleUser）', userB.includes('bubbleUser'));
-check('用户有头像', userB.includes('<img'));
+// 头像现在有三种渲染方式：自定义图片(<img>)、emoji(<span>)、
+// 本地生成渐变(<span>)。断言「有头像容器」而不是写死 <img>。
+check('用户有头像', /class="[^"]*avatar[^"]*"/.test(userB));
 
 // ── 3.5 深度思考面板 ───────────────────────────
 console.log('\n③.5 深度思考面板');

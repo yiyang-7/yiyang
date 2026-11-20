@@ -1,9 +1,12 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ChatInput from '../deepseek/ChatInput.jsx';
 import HistorySkeleton from './HistorySkeleton.jsx';
 import MessageBubble from '../MessageBubble.jsx';
-import { DeepSeekLogo, IconMenu, IconNewChat } from '../deepseek/icons.jsx';
+import { DeepSeekLogo, IconMenu, IconNewChat, IconSettings } from '../deepseek/icons.jsx';
+import SettingsPanel from '../settings/SettingsPanel.jsx';
 import { formatClock, shouldShowTimestamp } from './messageTime.js';
+import QuickReplies, { deriveQuickReplies } from './QuickReplies.jsx';
+import { getAvatar, isImageAvatar, getName } from '../../services/settings.js';
 import styles from './ChatArea.module.css';
 
 /**
@@ -15,6 +18,7 @@ import styles from './ChatArea.module.css';
 export default function ChatArea({
   chat,
   contact,
+  contacts = [],
   title,
   subtitle,
   onOpenSidebar,
@@ -31,8 +35,16 @@ export default function ChatArea({
   // 「有新消息」浮标：用户向上翻、离开了底部才出现。
   // 用 state 而不是纯 ref —— 它要驱动渲染，ref 改了不会重渲染。
   const [awayFromBottom, setAwayFromBottom] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const messages = chat.messages;
+
+  // 自定义头像与昵称：本地存档覆盖内置值。
+  // 拆成「图片」和「emoji」两条路，Avatar 组件按需选一个渲染。
+  const customAvatar = contact?.id ? getAvatar(contact.id) : '';
+  const avatarImage = isImageAvatar(customAvatar) ? customAvatar : '';
+  const avatarEmoji = customAvatar && !avatarImage ? customAvatar : '';
+  const displayName = (contact?.id && getName(contact.id)) || contact?.name;
 
   // 操作栏只挂在「最后一条 AI 回复」上。
   //
@@ -46,6 +58,17 @@ export default function ChatArea({
   }
   // 它必须是列表最后一条，否则说明后面还有用户的新消息
   if (lastAiIndex !== messages.length - 1) lastAiIndex = -1;
+
+  // 快捷回复：根据最后一条 AI 回复 + 当前人设现算。
+  //
+  // 用 lastLen 作为依赖的一部分，保证流式吐字期间不会每帧重算
+  // （消息内容在变但长度没变时没必要算）。真人只在流结束后才看到
+  // 建议，所以这里也不随逐字输出抖动。
+  const quickReplies = useMemo(
+    () => deriveQuickReplies(messages, contact),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [messages.length, lastLen, contact?.id],
+  );
 
   const lastLen = messages.length
     ? (messages[messages.length - 1].content || '').length
@@ -110,7 +133,9 @@ export default function ChatArea({
   }, [chat.loadingHistory]);
 
   return (
-    <>
+    // chatEnter：切会话时 App 用 key 重建子树，这里挂一个整体淡入上浮，
+    // 避免新内容一帧之内硬替换旧内容（视觉上的「闪现」）。
+    <div className={`${styles.chatShell} ${styles.chatEnter}`}>
       <header className={styles.topbar}>
         <button className={styles.navBtn} onClick={onOpenSidebar} aria-label="打开历史对话">
           <IconMenu />
@@ -124,6 +149,13 @@ export default function ChatArea({
           </span>
         </div>
 
+        <button
+          className={styles.navBtn}
+          onClick={() => setSettingsOpen(true)}
+          aria-label="设置"
+        >
+          <IconSettings />
+        </button>
         <button className={styles.navBtn} onClick={onNewChat} aria-label="新对话">
           <IconNewChat />
         </button>
@@ -147,9 +179,10 @@ export default function ChatArea({
                 )}
                 <MessageBubble
                   message={m}
-                  avatar={contact?.avatar}
+                  avatar={avatarEmoji || contact?.avatar}
+                  avatarImage={avatarImage}
                   avatarSeed={contact?.id}
-                  contactName={contact?.name}
+                  contactName={displayName}
                   useLogo={!contact || contact.id === 'default'}
                   pendingLabel={chat.pendingLabel}
                   showActions={i === lastAiIndex && !chat.sending}
@@ -190,6 +223,12 @@ export default function ChatArea({
           </div>
         )}
 
+        <QuickReplies
+          replies={quickReplies}
+          onPick={(t) => chat.send(t)}
+          visible={!chat.sending && !chat.loadingHistory && !chat.error}
+        />
+
         <ChatInput
           onSend={chat.send}
           onStop={chat.stop}
@@ -199,7 +238,14 @@ export default function ChatArea({
           webSearch={webSearch}
           onToggleWebSearch={onToggleWebSearch}
         />
-      </>
+
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        contacts={contacts}
+        activeContactId={contact?.id}
+      />
+    </div>
     );
   }
 

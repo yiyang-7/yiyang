@@ -11,7 +11,7 @@
     "test:stream": "node scripts/e2e-streaming.mjs",
     "test:reasoning": "node scripts/e2e-reasoning.mjs",
     "test:history": "node scripts/e2e-history.mjs",
-    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs && node scripts/demo-test.mjs",
+    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs && node scripts/demo-test.mjs && node scripts/demo-features.mjs",
     "test:mobile": "node scripts/mobile-layout.mjs",
     "android:sync": "vite build && cap sync android",
     "android:open": "cap open android",

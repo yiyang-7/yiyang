@@ -8,7 +8,7 @@ import styles from './MessageBubble.module.css';
 /**
  * 单条消息气泡。对方在左（白色），自己在右（绿色）。
  *
- * 头像用占位图（dicebear），加载失败退回 emoji，避免满屏裂图。
+ * 头像完全本地生成（自定义图片 / emoji / 渐变字首），不依赖任何远程服务。
  *
  * @param {object} p
  * @param {{id:string,role:'user'|'assistant',content:string,status:string}} p.message
@@ -16,7 +16,7 @@ import styles from './MessageBubble.module.css';
  * @param {string} [p.avatarSeed]   生成占位图的种子（通常是 contactId）
  * @param {string} [p.userAvatarSeed] 用户自己的占位图种子
  * @param {string} [p.contactName]  错误文案里用的名字
- * @param {boolean} [p.useLogo]     AI 侧改用 DeepSeek Logo 而不是 dicebear 头像
+ * @param {boolean} [p.useLogo]     AI 侧改用 DeepSeek Logo 而不是生成头像
  * @param {string} [p.pendingLabel] 流式占位时的文案（排队中 / 思考中），空内容时显示
  * @param {boolean} [p.showActions] 是否显示操作栏（重新生成 / 复制）。
  *   只有「最后一条 AI 回复、且不在流式中」为 true —— 见 ChatArea 的判断。
@@ -26,6 +26,7 @@ export default function MessageBubble({
   message,
   avatar,
   avatarSeed,
+  avatarImage,
   userAvatarSeed = 'me',
   contactName,
   useLogo = false,
@@ -54,8 +55,9 @@ export default function MessageBubble({
       ) : (
         <Avatar
           seed={isUser ? userAvatarSeed : avatarSeed || 'ai'}
-          emoji={isUser ? '🙂' : avatar || '🤖'}
+          emoji={isUser ? '🙂' : avatar || ''}
           name={isUser ? '我' : contactName || 'AI'}
+          image={isUser ? undefined : avatarImage}
         />
       )}
 
@@ -197,28 +199,61 @@ async function copyText(text) {
   }
 }
 
-/** 圆形占位头像 */
-function Avatar({ seed, emoji, name }) {
+/**
+ * 圆形头像。
+ *
+ * 优先级：自定义图片 > 自定义 emoji > 本地生成的渐变字首。
+ *
+ * 早期版本用 api.dicebear.com 拉远程头像，问题有两个：
+ *   1. 演示版是离线单文件，远程图必然加载失败，头像位置一片空白
+ *   2. 每次渲染都发外部请求，慢且不可控
+ * 现在完全本地生成，不联网也能看到统一的头像。
+ */
+function Avatar({ seed, emoji, name, image }) {
+  // 自定义图片（data URL）
+  if (image) {
+    return (
+      <div className={styles.avatar} title={name}>
+        <img className={styles.avatarImg} src={image} alt={name} />
+      </div>
+    );
+  }
+
+  // 自定义 emoji：直接渲染字符，不走图片
+  if (emoji) {
+    return (
+      <div className={styles.avatar} title={name}>
+        <span className={styles.avatarEmoji} aria-hidden="true">
+          {emoji}
+        </span>
+      </div>
+    );
+  }
+
+  // 兜底：由 seed 生成稳定的渐变 + 首字
+  const palette = avatarPalette(seed);
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?';
   return (
     <div className={styles.avatar} title={name}>
-      <img
-        className={styles.avatarImg}
-        src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(
-          seed,
-        )}&backgroundColor=b6e3f4,c0aede,ffdfbf`}
-        alt={name}
-        loading="lazy"
-        onError={(e) => {
-          const img = e.currentTarget;
-          const parent = img.parentElement;
-          if (!parent || parent.dataset.fallback) return;
-          parent.dataset.fallback = '1';
-          img.style.display = 'none';
-          const span = document.createElement('span');
-          span.textContent = emoji;
-          parent.appendChild(span);
-        }}
-      />
+      <span
+        className={styles.avatarGenerated}
+        style={{ background: palette }}
+        aria-hidden="true"
+      >
+        {initial}
+      </span>
     </div>
   );
+}
+
+/** seed → 稳定的双色渐变。同一个 seed 永远同一套颜色。 */
+function avatarPalette(seed) {
+  const s = String(seed || 'ai');
+  let h1 = 0;
+  let h2 = 0;
+  for (let i = 0; i < s.length; i++) {
+    h1 = (h1 * 31 + s.charCodeAt(i)) % 360;
+    h2 = (h2 * 17 + s.charCodeAt(i) * 7) % 360;
+  }
+  return `linear-gradient(135deg, hsl(${h1} 62% 70%), hsl(${h2} 58% 58%))`;
 }

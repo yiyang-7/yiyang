@@ -248,3 +248,95 @@
 @media (prefers-reduced-motion: reduce) {
   .actions { animation: none; }
 }
+
+/* ── 头像：本地生成（不联网） ───────────────── */
+
+.avatarEmoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 20px;
+  line-height: 1;
+  /* emoji 在部分安卓上会有基线偏移，居中靠 flex 保证 */
+}
+
+.avatarGenerated {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  user-select: none;
+}
+
+/* ── 消息入场微动画 ─────────────────────────── */
+
+/*
+ * 对齐 DeepSeek 原版的节奏：气泡从略下方浮起 + 轻微放大，
+ * 260ms、缓出曲线。太快显得生硬，太慢会拖慢连续对话的观感。
+ *
+ * 用 animation 而不是 transition：只在挂载时跑一次，
+ * 流式更新 content 不会反复触发。
+ */
+.row {
+  animation: bubbleIn 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 自己在右、对方在左，浮起方向做一点区分，读起来更有「对话感」 */
+.rowUser {
+  animation-name: bubbleInUser;
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bubbleInUser {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateX(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0) scale(1);
+  }
+}
+
+/* 头像单独淡入，比气泡稍慢一点，形成层次 */
+.avatar {
+  animation: avatarIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.04s;
+}
+
+@keyframes avatarIn {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .rowUser,
+  .avatar {
+    animation: none;
+  }
+}

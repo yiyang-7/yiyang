@@ -4,6 +4,7 @@ import ChatArea from '../components/chat/ChatArea.jsx';
 import { useChat } from '../hooks/useChat.js';
 import { fetchSessions } from '../services/api.js';
 import { getUserId } from '../services/session.js';
+import { getName } from '../services/settings.js';
 import styles from './App.module.css';
 
 /**
@@ -67,7 +68,9 @@ export default function App({ conversationId, contact, contacts = [], onPickCont
     onNavigate({ name: 'chat', conversationId: s.conversationId });
   };
 
-  const title = chat.messages.length > 0 ? (contact?.name || 'DeepSeek') : '新对话';
+  // 标题优先用自定义昵称（设置里可改），没改则用内置名字
+  const customName = contact?.id ? getName(contact.id) : '';
+  const title = chat.messages.length > 0 ? (customName || contact?.name || 'DeepSeek') : '新对话';
   // 顶栏副标题：AI 生成中显示「对方正在输入...」，空闲显示在线状态
   const subtitle = chat.sending ? '对方正在输入...' : '在线';
 
@@ -76,6 +79,7 @@ export default function App({ conversationId, contact, contacts = [], onPickCont
       <ChatArea
         chat={chat}
         contact={contact}
+        contacts={contacts}
         title={title}
         subtitle={subtitle}
         onOpenSidebar={() => setSidebarOpen(true)}

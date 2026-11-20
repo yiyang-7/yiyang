@@ -28,6 +28,7 @@ export const SESSIONS = [
     conversationId: 'demo-code',
     contactId: 'coder',
     title: '用 CSS 做响应式侧边栏',
+    name: 'Codex',
     lastMessage: '抽屉的关键是脱离文档流，用 fixed 而不是改宽度。',
     lastAt: now - 3 * MIN,
     unread: 0,
@@ -36,6 +37,7 @@ export const SESSIONS = [
     conversationId: 'demo-cat',
     contactId: 'catgirl',
     title: '今天想聊点轻松的',
+    name: '小橘',
     lastMessage: '好呀好呀～今天想聊什么都可以喵！',
     lastAt: now - 40 * MIN,
     unread: 2,
@@ -44,6 +46,7 @@ export const SESSIONS = [
     conversationId: 'demo-think',
     contactId: 'default',
     title: '为什么天空是蓝色的',
+    name: 'DeepSeek',
     lastMessage: '瑞利散射：波长越短，散射越强。',
     lastAt: now - 5 * HOUR,
     unread: 0,
@@ -52,6 +55,7 @@ export const SESSIONS = [
     conversationId: 'demo-butler',
     contactId: 'butler',
     title: '关于时间管理',
+    name: '塞巴斯蒂安',
     lastMessage: '与其追求效率，不如先确认方向。',
     lastAt: now - 26 * HOUR,
     unread: 0,
@@ -373,6 +377,11 @@ export function demoStreamChat({ message, signal, regenerate }, onFrame) {
   }
 
   const total = thinkingParts.length + replyParts.length;
+  // done 帧必须带完整正文。
+  // useChat 收到 done 时用 data.text 作为最终内容；如果这里给空串，
+  // 它会退回去读「还没吐完的队列」——而那时队列早已被清零，
+  // 于是判定为「空回复」并把整个气泡删掉，表现为回答一闪就没。
+  const fullReply = replyParts.join('');
 
   return new Promise((resolve, reject) => {
     let i = 0;
@@ -382,7 +391,7 @@ export function demoStreamChat({ message, signal, regenerate }, onFrame) {
 
     const finish = () => {
       cleanup();
-      onFrame('done', { text: '', assistantMessageId: null });
+      onFrame('done', { text: fullReply, assistantMessageId: null });
       resolve();
     };
 

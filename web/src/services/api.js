@@ -18,6 +18,7 @@
  *   VITE_API_BASE=http://192.168.1.10:3090 npm run build
  * 空值则保持相对路径，行为与浏览器一致。
  */
+import { getApiKey } from './settings.js';
 import {
   DEMO,
   demoFetchContacts,
@@ -178,8 +179,21 @@ export async function streamChat(
   },
   onFrame,
 ) {
-  // 演示模式：内置数据流，完全离线
+  // 演示模式
   if (DEMO) {
+    // 填了自己的 API Key 就尝试真连官方接口；
+    // 没填（或连接失败）退回内置数据，保证演示永远不白屏。
+    const key = getApiKey();
+    if (key) {
+      const ok = await tryRealStream({ key, message, signal }, onFrame, {
+        conversationId, userId, contactId,
+      });
+      if (ok) return;
+      // 退回演示数据，但先告诉用户为什么
+      onFrame('notice', {
+        text: '连接官方接口失败（可能是跨域限制或网络问题），已切换为演示回复。',
+      });
+    }
     return demoStreamChat({ message, signal, regenerate }, onFrame);
   }
 
@@ -365,4 +379,88 @@ function mockReasoningStream({ signal }, onFrame) {
 
     const cleanup = () => clearTimeout(timer);
   });
+}
+
+
+/**
+ * 浏览器直连 DeepSeek 官方接口。
+ *
+ * 注意这是「尽力而为」：官方接口通常不放行浏览器跨域，
+ * 所以大概率会失败。失败时返回 false，调用方退回演示数据，
+ * 而不是把错误抛到界面上——演示过程不该被网络问题打断。
+ *
+ * 真正的生产用法是走网关（见 README），密钥由后端代持。
+ */
+async function tryRealStream({ key, message, signal }, onFrame, meta) {
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        stream: true,
+        messages: [{ role: 'user', content: message }],
+      }),
+      signal,
+    });
+
+    if (!res.ok || !res.body) {
+      return false;
+    }
+
+    onFrame('ready', {
+      conversationId: meta.conversationId || 'live',
+      userMessageId: null,
+      contactId: meta.contactId,
+    });
+    onFrame('accepted', {});
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let full = '';
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      // SSE 以空行分隔事件
+      const parts = buf.split('\n\n');
+      buf = parts.pop() ?? '';
+      for (const block of parts) {
+        for (const line of block.split('\n')) {
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          let json;
+          try {
+            json = JSON.parse(payload);
+          } catch {
+            continue;
+          }
+          const delta = json.choices?.[0]?.delta;
+          if (!delta) continue;
+          if (delta.reasoning_content) {
+            onFrame('reasoning', { text: delta.reasoning_content });
+          }
+          if (delta.content) {
+            full += delta.content;
+            onFrame('delta', { text: delta.content });
+          }
+        }
+      }
+    }
+
+    if (!full) return false;
+
+    // 与真后端一致：done 帧带完整正文，避免气泡被判定为空而删除
+    onFrame('done', { text: full, assistantMessageId: null });
+    return true;
+  } catch {
+    return false;
+  }
 }
