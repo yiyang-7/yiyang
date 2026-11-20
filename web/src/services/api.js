@@ -18,7 +18,24 @@
  *   VITE_API_BASE=http://192.168.1.10:3090 npm run build
  * 空值则保持相对路径，行为与浏览器一致。
  */
+import {
+  DEMO,
+  demoFetchContacts,
+  demoFetchHistory,
+  demoFetchSessions,
+  demoStreamChat,
+} from './demo.js';
+
 const API_BASE = (import.meta.env?.VITE_API_BASE ?? '').replace(/\/$/, '');
+
+/**
+ * 演示模式（VITE_DEMO=1 构建）。
+ *
+ * 所有接口短路到内置数据，不碰网络。这样单文件 HTML 双击就能展示：
+ * 没有后端、没有模型额度、断网都正常。
+ * UI 仍是真实组件在渲染，所以看到的效果和真机一致。
+ */
+export { DEMO as IS_DEMO };
 
 /** 拼出完整 API 地址。/api 前缀只在有 VITE_API_BASE 时才省略。 */
 function apiUrl(path) {
@@ -78,6 +95,7 @@ async function getJson(path, { timeoutMs = 8000, signal } = {}) {
 
 /** 联系人列表 */
 export function fetchContacts() {
+  if (DEMO) return Promise.resolve(demoFetchContacts());
   return getJson('/contacts').then((r) => r.contacts ?? []);
 }
 
@@ -86,6 +104,7 @@ export function fetchContacts() {
  * 每条包含：conversationId / contactId / name / avatar / lastMessage / lastAt / unread
  */
 export async function fetchSessions({ userId, limit = 100 } = {}) {
+  if (DEMO) return demoFetchSessions();
   const qs = new URLSearchParams();
   if (userId) qs.set('userId', userId);
   qs.set('limit', String(limit));
@@ -103,6 +122,7 @@ export async function fetchSessions({ userId, limit = 100 } = {}) {
  * 失败静默：presence 只影响未读红点，不该因为网络抖动打断对话。
  */
 export async function reportPresence(userId, conversationId) {
+  if (DEMO) return;   // 演示模式没有服务端，未读状态由内置数据决定
   try {
     await fetch(apiUrl('/presence'), {
       method: 'POST',
@@ -115,6 +135,7 @@ export async function reportPresence(userId, conversationId) {
 }
 
 export async function markSessionRead(conversationId, userId) {
+  if (DEMO) return;
   try {
     await fetch(apiUrl(`/conversations/${encodeURIComponent(conversationId)}/read`), {
       method: 'POST',
@@ -128,6 +149,7 @@ export async function markSessionRead(conversationId, userId) {
 
 /** 历史消息。会话不存在（404）时返回空数组，而不是抛错 */
 export async function fetchHistory(conversationId, userId, limit = 100) {
+  if (DEMO) return demoFetchHistory(conversationId);
   try {
     const r = await getJson(
       `/messages?conversationId=${encodeURIComponent(conversationId)}&userId=${encodeURIComponent(userId)}&limit=${limit}`,
@@ -156,6 +178,11 @@ export async function streamChat(
   },
   onFrame,
 ) {
+  // 演示模式：内置数据流，完全离线
+  if (DEMO) {
+    return demoStreamChat({ message, signal, regenerate }, onFrame);
+  }
+
   // 开发用假流：地址栏加 ?mock=reasoning 即可，不需要后端
   if (shouldMockReasoning()) {
     return mockReasoningStream({ message, contactId, signal }, onFrame);

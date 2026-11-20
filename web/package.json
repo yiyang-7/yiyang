@@ -11,11 +11,13 @@
     "test:stream": "node scripts/e2e-streaming.mjs",
     "test:reasoning": "node scripts/e2e-reasoning.mjs",
     "test:history": "node scripts/e2e-history.mjs",
-    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs",
+    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs && node scripts/demo-test.mjs",
     "test:mobile": "node scripts/mobile-layout.mjs",
     "android:sync": "vite build && cap sync android",
     "android:open": "cap open android",
-    "android:apk": "vite build && cap sync android && cd android && ./gradlew assembleDebug"
+    "android:apk": "vite build && cap sync android && cd android && ./gradlew assembleDebug",
+    "build:demo": "VITE_DEMO=1 vite build && node scripts/build-demo.mjs",
+    "test:demo": "node scripts/demo-test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",

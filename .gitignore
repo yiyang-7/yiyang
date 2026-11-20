@@ -33,3 +33,10 @@ web/android/capacitor-cordova-android-plugins/build/
 
 # 本地覆盖的配置（可能含真实密钥），主配置 server.config.json 可以提交
 server.config.local.json
+# 演示版产物：4.6MB 单文件，由 npm run build:demo 生成，
+# GitHub Pages 工作流会在 CI 里重新构建，不进仓库。
+web/demo/
+pages/
+
+# SSR 测试的临时目录
+web/.ssr-*/

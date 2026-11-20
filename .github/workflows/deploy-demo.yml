@@ -1,0 +1,74 @@
+name: Deploy Demo
+
+# 把演示版（单文件 HTML）发布到 GitHub Pages。
+#
+# 用途：APK 只能装在安卓手机上，老师电脑上打不开。
+# 部署成网页后，发一个链接就能在任何电脑的浏览器里看，不用装任何东西。
+#
+# 启用方式（只需一次）：
+#   仓库 Settings → Pages → Source 选 "GitHub Actions"
+# 之后每次 push 到 main 会自动重新部署。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一个分支的部署串行执行，避免两次部署互相覆盖
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 演示版不走任何网络请求，所以不需要 VITE_API_BASE
+      - name: Build demo
+        run: npm run build:demo
+
+      # Pages 要求入口是 index.html。
+      # 产物文件名是中文「演示版.html」，中文 URL 在部分环境会出编码问题，
+      # 所以复制成 index.html 再发布。
+      - name: Prepare Pages output
+        run: |
+          mkdir -p ../pages
+          cp demo/演示版.html ../pages/index.html
+          echo "产物大小：$(du -h ../pages/index.html | cut -f1)"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

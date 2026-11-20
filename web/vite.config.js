@@ -1,8 +1,36 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+/**
+ * 目录部署需要绝对路径 /assets/...，
+ * 但演示版要能从 file:// 双击打开，必须用相对路径。
+ * 两者靠 VITE_DEMO 区分。
+ */
+const isDemo = process.env.VITE_DEMO === '1';
+
 export default defineConfig({
   plugins: [react()],
+
+  // 演示版：相对路径 + 打成一个 chunk。
+  // file:// 下浏览器会用 CORS 规则拦截外部 <script type="module" src>，
+  // 所以必须把所有代码收敛成单文件，再在构建后内联进 HTML。
+  base: isDemo ? './' : '/',
+  build: isDemo
+    ? {
+        rollupOptions: {
+          output: {
+            // 不分包：动态 import 也内联，保证产物只有一个 js
+            inlineDynamicImports: true,
+            entryFileNames: 'app.js',
+            assetFileNames: 'app.[ext]',
+          },
+        },
+        // 关掉 sourcemap，减小单文件体积
+        sourcemap: false,
+        cssCodeSplit: false,
+      }
+    : {},
+
   server: {
     host: '0.0.0.0',
     port: 5173,

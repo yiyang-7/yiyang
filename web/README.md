@@ -21,6 +21,68 @@ cd /root/森萝/web && npx vite --host 0.0.0.0 --port 5173 --strictPort
 > `preload.cjs` 把 `fs.promises.link` 替换成 `copyFile`——这台机器的文件系统
 > 不支持硬链接，DSH 启动自检会失败。
 
+## 演示版（无需后端、无需联网）
+
+**为什么需要这个**：APK 只能在安卓设备上运行，电脑上打不开；
+真跑起来还要求后端可达、模型额度充足。要给不在一台机器上的人看效果，
+这两条都不成立。
+
+演示版把整个应用打成**一个 HTML 文件**，所有接口短路到内置数据：
+
+```bash
+npm run build:demo     # → web/demo/演示版.html（约 4.6MB）
+```
+
+双击就能打开。不需要 node、不需要起服务、断网也行。
+
+### 它展示的是什么
+
+**真实的 UI，内置的数据**。渲染走的还是同一套组件、同一份 CSS，
+所以气泡、思考面板、打字机、未读红点、复制/重新生成都是真代码在跑，
+不是截图，也不是另做一套假界面。
+
+内容是 4 段预置对话 + 关键词路由的假回复。输入里带「代码」会给代码块，
+带「累」走安抚分支，带「为什么」走解释分支。重新生成会换一个开头，
+这样能看出「确实重新问了一次」而不是重播。
+
+右下角常驻一个角标：`演示版 · 本地数据，未连接模型`。
+避免被误认为真的在调模型。
+
+### 单文件是怎么来的
+
+`file://` 下浏览器会用 CORS 规则拦截 `<script type="module" src="...">`，
+所以产物必须自包含。`scripts/build-demo.mjs` 做了三件事：
+
+1. JS/CSS 内联进 HTML（`vite.config.js` 里 `inlineDynamicImports` 打成单 chunk）
+2. 字体转 base64（只取 woff2，woff/ttf 是兜底，内联会让体积翻倍）
+3. 校验没有残留的外部 `src` —— 有就直接失败，不产出打不开的文件
+
+`import.meta.env` 在构建期被替换成字面量，所以运行时不需要 Vite 的环境变量机制。
+
+### 已验证 / 未验证
+
+已验证：
+- 内联 JS 语法正确（`node --check`）
+- 无静态/动态 import 残留，`import.meta.env` 为 0 处
+- 演示数据能渲染出代码块、表格、标题、粗体、思考面板、操作按钮（SSR 实测）
+- 假流帧顺序 `ready → accepted → reasoning… → delta… → done`
+- 中途 abort 抛 `AbortError`；重新生成内容与首次不同
+- 模块能被 JS 引擎加载执行到挂载阶段（`npm run test:demo`）
+
+未验证：
+- 没有真实浏览器跑过——这台机器缺 `libnspr4`，无 root 装不了 Chromium。
+- 因此「双击后视觉上长什么样」只能在你自己电脑上确认。
+
+### 发布成网址（可选）
+
+`.github/workflows/deploy-demo.yml` 会把演示版部署到 GitHub Pages，
+这样发给别人一个链接就行。需要在仓库设置里开一次：
+
+**Settings → Pages → Source 选 "GitHub Actions"**
+
+之后每次 push 到 main 自动重新部署，地址形如
+`https://<用户名>.github.io/<仓库名>/`。
+
 ## 界面结构
 
 ```
