@@ -76,12 +76,25 @@ npm run build:demo     # → web/demo/演示版.html（约 4.6MB）
 ### 发布成网址（可选）
 
 `.github/workflows/deploy-demo.yml` 会把演示版部署到 GitHub Pages，
-这样发给别人一个链接就行。需要在仓库设置里开一次：
+这样发给别人一个链接就行。
+
+**当前状态：构建通过，部署待启用。**
+
+首次运行结果：`build` 作业全部成功（`github-pages` 产物已上传，1.0MB），
+但 `deploy` 作业失败：
+
+```
+Error: Failed to create deployment (status: 404)
+Ensure GitHub Pages has been enabled: .../settings/pages
+```
+
+原因是 GitHub Pages 还没在仓库里启用。这一步必须在网页上手动做一次
+（涉及 OIDC 授权，无法通过 API 完成）：
 
 **Settings → Pages → Source 选 "GitHub Actions"**
 
-之后每次 push 到 main 自动重新部署，地址形如
-`https://<用户名>.github.io/<仓库名>/`。
+启用后在 Actions 页面重跑 `Deploy Demo` 即可，地址形如
+`https://<用户名>.github.io/<仓库名>/`。之后每次 push 到 main 自动重新部署。
 
 ## 界面结构
 
