@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './pages/App.jsx';
 import { fetchContacts, fetchSessions } from './services/api.js';
@@ -73,14 +73,42 @@ function Root() {
 
   const conversationId = route.name === 'chat' ? route.conversationId : null;
 
+  // 「新对话」发出首条消息后，路由会从 #/ 变成 #/chat/<新id>。
+  // 如果 key 跟着变，App 会整个重建、useChat 的 messages 被清空，
+  // 界面看起来像「按了发送没反应」。
+  // 这里记住「这是从新对话自动分配来的 id」，让它不参与 key，
+  // 等用户真正切到别的会话时再换 key。
+  const autoConvRef = useRef(null);
+  const prevConvRef = useRef(null);
+  if (conversationId !== prevConvRef.current) {
+    // 从 null 变成有值 = 首条消息自动分配
+    if (prevConvRef.current === null && conversationId) autoConvRef.current = conversationId;
+    // 切到别的会话（不是刚自动分配的那个）= 用户主动切换，清掉粘性
+    else if (conversationId && conversationId !== autoConvRef.current) autoConvRef.current = null;
+    else if (!conversationId) autoConvRef.current = null;
+    prevConvRef.current = conversationId;
+  }
+
+  // 参与 key 的会话标识：自动分配的那个不参与
+  const stableConvKey =
+    conversationId && conversationId === autoConvRef.current
+      ? 'new'   // 视同还在新对话，避免重建
+      : (conversationId ?? 'new');
+
   return (
     <div className="app-shell">
       <div className="app-frame">
         <App
-          // key 保证换会话时状态重建，不串历史。
-          // 新对话没有 conversationId，光用 'new' 会导致「换了 AI 但 key 没变」，
-          // 组件里的 useChat 还攥着上一个人设的 conversationId —— 必须把 contactId 也算进 key。
-          key={`${conversationId ?? 'new'}:${activeContact?.id ?? 'default'}`}
+          // key 让「换会话 / 换人设」时 useChat 状态重建，不串历史。
+          //
+          // 注意不能直接把 conversationId 放进 key：
+          // 新对话里发出首条消息时，conversationId 会从 null 变成新分配的 id，
+          // key 一变 App 就整个卸载重建，useChat 的 messages 全被清空——
+          // 表现为「在新对话里按发送，界面毫无反应」（消息其实发出去了）。
+          //
+          // 所以：新对话（route 为 new）时 key 只跟人设走，
+          // 进入已有会话后才按会话 id 区分。首条消息落定前后 key 保持不变。
+          key={`${stableConvKey}:${activeContact?.id ?? 'default'}`}
           conversationId={conversationId}
           contact={activeContact}
           contacts={contacts}

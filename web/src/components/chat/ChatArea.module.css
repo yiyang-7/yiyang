@@ -301,3 +301,54 @@
   height: 100%;
   min-height: 0;
 }
+
+/* ── API 密钥状态条 ──────────────────────────────
+   没密钥时是灰底提示，填了变蓝绿——让用户一眼看出
+   现在看到的是演示数据还是真模型。 */
+.keyBarOff,
+.keyBarOn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.keyBarOff {
+  background: #f2f3f5;
+  color: #6b7280;
+}
+
+.keyBarOn {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+}
+
+.keyBarText {
+  flex: 1;
+  min-width: 0;
+}
+
+.keyBarBtn {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #4d6bfe;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.keyBarBtn:hover {
+  background: #3f5be0;
+}
+
+.keyBarBtn:active {
+  transform: scale(0.96);
+}

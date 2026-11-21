@@ -19,8 +19,17 @@ import styles from './SettingsPanel.module.css';
  * 演示版是纯前端产物，没有后端可以代持密钥——这一点在界面上明说，
  * 避免用户误以为密钥存在云上。
  */
-export default function SettingsPanel({ open, onClose, contacts = [], activeContactId }) {
-  const [tab, setTab] = useState('avatar'); // avatar | api
+export default function SettingsPanel({ open, initialTab, onClose, onSaved, contacts = [], activeContactId }) {
+  // 默认停在「API 密钥」页——这是实际最需要被找到的入口，
+  // 角色外观属于次要设置。
+  const [tab, setTab] = useState(initialTab || 'api'); // avatar | api
+
+  // useState 的初始值只在首次挂载生效。面板是常驻挂载、靠 open 控制显隐的，
+  // 所以每次重新打开都要按调用方指定的标签重置一次，
+  // 否则用户上次停在「角色外观」，下次点「API 密钥」按钮却还是打开旧标签。
+  useEffect(() => {
+    if (open) setTab(initialTab || 'api');
+  }, [open, initialTab]);
   const [targetId, setTargetId] = useState(activeContactId || contacts[0]?.id || 'default');
   const [emoji, setEmoji] = useState('');
   const [nick, setNick] = useState('');
@@ -92,6 +101,7 @@ export default function SettingsPanel({ open, onClose, contacts = [], activeCont
   const handleSaveKey = () => {
     setApiKey(key);
     flash(key.trim() ? '密钥已保存到本机' : '密钥已清除');
+    onSaved?.();   // 通知外层刷新密钥状态条
   };
 
   const isImg = emoji.startsWith('data:image/');
@@ -257,10 +267,16 @@ export default function SettingsPanel({ open, onClose, contacts = [], activeCont
                 当前：{key ? maskKey(key) : '未设置'}
               </p>
 
+              <p className={styles.small}>
+                没有密钥？到 platform.deepseek.com 注册后在「API keys」里创建。
+              </p>
               <p className={styles.note}>
-                浏览器直接调用 DeepSeek 接口属于跨域请求，官方接口通常不放行。
-                真要用起来，需要一个转发服务（后端网关）。这里保存的密钥
-                会在网关可用时自动带上。
+                <strong>实测可用</strong>：DeepSeek 官方接口已放行浏览器跨域请求
+                （返回 <code>access-control-allow-origin: null</code>，正对
+                <code>file://</code> 页面），所以填好密钥后，这个单文件网页
+                就能直接出真实回答，不需要另外部署转发服务。
+                填了有效密钥却调不通时，页面会明确告诉你原因（密钥无效 / 余额不足 / 网络问题），
+                不会假装成功。
               </p>
             </>
           )}

@@ -35,9 +35,25 @@ npm run build:demo     # → web/demo/演示版.html（约 4.6MB）
 
 双击就能打开。不需要 node、不需要起服务、断网也行。
 
-### 已修复的三个 bug
+### 已修复的五个 bug
 
-**0. 演示版打不开（白屏）**
+**0. 新对话发消息完全没反应（影响面最大的一个）**
+
+在新对话页输入文字按发送，输入框清空、地址栏变了，但界面上什么都不出现。
+先点进历史会话再发消息就一切正常——所以之前的测试全都没抓到。
+
+根因是 `<App>` 的 `key` 里放了 `conversationId`：
+
+```
+发送 → conversationId 从 null 变成新 id → key 变了
+     → App 卸载重建 → useChat 的 messages 归零 → 刚插入的消息消失
+```
+
+`key` 本身是为了「切会话不串历史」，错在把「首条消息自动分配 id」也算成了切会话。
+修法是粘性会话 id：自动分配的 id 不参与 key。另外补了一条原则——
+**拉历史返回空数组时绝不覆盖本地消息**，否则往返请求会把刚发的内容抹掉。
+
+**1. 演示版打不开（白屏）**
 
 根因是我自己在加快捷回复时引入的 **TDZ（暂时性死区）** 错误：
 
@@ -58,7 +74,7 @@ const lastLen = messages.length ? ... : 0;   // ← 声明在下面
 
 ### 已修复的两个 bug
 
-**1. 点击历史会话进不去聊天界面**
+**2. 点击历史会话进不去聊天界面**
 
 根因：后端 `/sessions` 返回的字段叫 `name`，而演示数据只写了 `title`。
 `App.jsx` 靠 `session.name` 去找联系人，取不到就退回默认角色，
@@ -66,7 +82,7 @@ const lastLen = messages.length ? ... : 0;   // ← 声明在下面
 
 修复：演示数据补齐 `name` 字段。
 
-**2. 对方回答一闪就消失**
+**3. 对方回答一闪就消失**
 
 根因在 `done` 帧。`useChat` 收到 `done` 时用 `data.text` 作为最终正文；
 演示版这里传了空串，于是它退回去读「还没吐完的打字机队列」——
@@ -137,9 +153,18 @@ const lastLen = messages.length ? ... : 0;   // ← 声明在下面
 - 中途 abort 抛 `AbortError`；重新生成内容与首次不同
 - 模块能被 JS 引擎加载执行到挂载阶段（`npm run test:demo`）
 
+- **真实 Chromium 里跑过完整交互**（原以为这台机器装不了浏览器，后来解决了）：
+  打开侧栏 → 点历史会话 → 输入 → 发送 → 等回复 → 快捷回复出现 → 打开设置 → 填 API 密钥，
+  全程零 JS 错误。截图见 `截图/` 目录。
+
 未验证：
-- 没有真实浏览器跑过——这台机器缺 `libnspr4`，无 root 装不了 Chromium。
-- 因此「双击后视觉上长什么样」只能在你自己电脑上确认。
+- 真机（安卓手机装 APK）——手上没有设备。
+- 填入**有效** API 密钥后的真实模型输出。接口连通性和错误分支已实测
+  （`access-control-allow-origin: null`，401/402 能正确报错），
+  但需要余额的完整对话没有跑过。
+
+> 浏览器怎么装上的：用 `apt-get download` 把 23 个依赖 `.deb` 下到本地目录解包，
+> 通过 `LD_LIBRARY_PATH` 指过去，全程没动系统（无 root）。中文字体同样装进 `~/.fonts`。
 
 ### 发布成网址（可选）
 
@@ -288,11 +313,11 @@ hash 路由，两种形态：
 
 两个实现要点：
 
-**1. 判据必须在落库那一刻求值。** 早期写成请求开始时算一次常量，
+**4. 判据必须在落库那一刻求值。** 早期写成请求开始时算一次常量，
 那就退化成「他发消息时在哪」——永远是 true，未读永远不 +1。
 现在是个函数 `isViewingNow()`，在 `finalizeMessage` 前调用。
 
-**2. 「从未上报」和「明确离开」必须分开。** 早期用 `map.delete()` 表示离开，
+**5. 「从未上报」和「明确离开」必须分开。** 早期用 `map.delete()` 表示离开，
 结果两种情况混在一起：明确离开被当成没上报，走了保守分支（算作在看），
 未读永远不 +1。现在用一个独立的 `away` 集合区分，有测试守着。
 
@@ -381,13 +406,13 @@ POST /api/chat { conversationId, message, contactId }
 
 ### 三条安全边界
 
-**1. 人设不能来自请求体。** 早期版本从 `req.body.persona` 取，等于把 system prompt
+**6. 人设不能来自请求体。** 早期版本从 `req.body.persona` 取，等于把 system prompt
 的写权限交给调用方。现在只认数据库，请求体里带 `persona` 会被忽略（有测试守着）。
 
-**2. 会话绑定后不可变。** 同一个 conversationId 第二次请求带不同 contactId，
+**7. 会话绑定后不可变。** 同一个 conversationId 第二次请求带不同 contactId，
 以第一次为准——否则历史对话的语义会错乱（前面猫娘说的、后面管家接话）。
 
-**3. 空 system_prompt 不写 personaPrefix。** 写成空字符串会把 profile 自带的人设
+**8. 空 system_prompt 不写 personaPrefix。** 写成空字符串会把 profile 自带的人设
 抹成空，模型收到「你的设定是：」之后就没了。
 
 ### patch 文件名为什么带哈希
@@ -439,7 +464,7 @@ npm run android:apk              # 生成 app-debug.apk
 
 打包后 WebView 的 origin 是 `https://localhost`，和浏览器环境有两个本质差异：
 
-**1. 没有 Vite 代理了。** 浏览器里所有请求走 `/api/*` 由 dev server 转发，
+**9. 没有 Vite 代理了。** 浏览器里所有请求走 `/api/*` 由 dev server 转发，
 App 里没有这一层，相对路径会打到 App 自己的资源服务器，全部 404。
 
 所以加了 `VITE_API_BASE`，构建时指向真实后端：
@@ -450,7 +475,7 @@ VITE_API_BASE=http://192.168.1.10:3090 npm run android:apk
 
 为空时保持相对路径，浏览器行为不变。
 
-**2. 跨域了。** App 的 origin 对后端来说是外来者，后端原本**完全没有 CORS 支持**，
+**10. 跨域了。** App 的 origin 对后端来说是外来者，后端原本**完全没有 CORS 支持**，
 不处理的话所有请求都会被浏览器拦掉，表现为白屏或一直转圈。
 
 后端加了 `DSH_CHAT_CORS`：
@@ -462,7 +487,7 @@ DSH_CHAT_CORS="https://localhost,capacitor://localhost" npm start
 **默认关闭**——这个后端能读写所有会话，把 CORS 开给任意网页
 等于把数据交给用户访问过的任何站点。
 
-**3. 后端默认只听 `127.0.0.1`。** 手机连不上，需要：
+**11. 后端默认只听 `127.0.0.1`。** 手机连不上，需要：
 
 ```bash
 DSH_CHAT_HOST=0.0.0.0 PORT=3090 npm start
@@ -479,16 +504,16 @@ DSH_CHAT_HOST=0.0.0.0 PORT=3090 npm start
 
 ### 有三处和"标准配置"不一样，是必须的
 
-**1. Node 22，不是 20。** `@capacitor/cli@8.6.2` 的 `engines` 是 `>=22.0.0`，
+**12. Node 22，不是 20。** `@capacitor/cli@8.6.2` 的 `engines` 是 `>=22.0.0`，
 Node 20 上 `npx cap sync android` 会因引擎不兼容直接失败。
 Vite 8 要求 `^20.19.0 || >=22.12.0`，所以 22 是两个依赖的唯一交集。
 要退回 Node 20，必须同时把 Capacitor 降到 7.x。
 
-**2. Java 21，不是 17。** `android/capacitor-cordova-android-plugins/build.gradle`
+**13. Java 21，不是 17。** `android/capacitor-cordova-android-plugins/build.gradle`
 里写死 `sourceCompatibility = JavaVersion.VERSION_21`，
 用 JDK 17 编这个模块会报 `invalid source release: 21`。
 
-**3. 额外装 SDK Platform 36。** `android-actions/setup-android` 只装 cmdline-tools，
+**14. 额外装 SDK Platform 36。** `android-actions/setup-android` 只装 cmdline-tools，
 不装 SDK Platform。本工程 `compileSdk = 36`，runner 镜像不一定预装，
 缺了会报 `Failed to find target with hash string 'android-36'`。
 
@@ -596,13 +621,13 @@ DSH_ACTIVE_ALLOW_TRIGGER=1             # 可选，挂 POST /active/trigger 手�
 
 ### 三条必须守住的约束
 
-**1. 拿会话的轮次锁。** dsh 进程是常驻的，定时器和用户请求会往同一个进程写 prompt。
+**15. 拿会话的轮次锁。** dsh 进程是常驻的，定时器和用户请求会往同一个进程写 prompt。
 不拿锁（`acquireTurn`，`/chat` 用的同一把）两边回复会串在一起，聊天记录直接乱掉。
 
-**2. 冷启动要回灌历史。** 进程空闲 30 分钟后被回收，早上的第一次触发必然是冷启动。
+**16. 冷启动要回灌历史。** 进程空闲 30 分钟后被回收，早上的第一次触发必然是冷启动。
 不回灌的话，模型看不到昨天的对话，问候会像失忆一样自顾自说话。
 
-**3. 必须在已有会话上触发。** 对不存在的 conversationId 硬发，会凭空创造出一个
+**17. 必须在已有会话上触发。** 对不存在的 conversationId 硬发，会凭空创造出一个
 联系人信息、历史全空、用户从没见过的新会话——界面上冒出一条无源消息。
 所以 `runActiveTurn` 先查会话，不存在就报 `NO_CONVERSATION` 并跳过。
 
@@ -877,7 +902,7 @@ App            外壳：拉会话列表、持有 UI 开关、处理导航（只�
 
 ### 三个必须知道的坑
 
-**1. 图标不显示，但不报错。** 官方图标产出 `<svg><use href="#dsw-icon-xxx"/></svg>`，
+**18. 图标不显示，但不报错。** 官方图标产出 `<svg><use href="#dsw-icon-xxx"/></svg>`，
 图形由文档里的 `<symbol>` 提供，DSH 宿主靠 `ui-theme` 插件注入。没装主题就得自己注：
 `src/components/deepseek/sprite.js` 从 `ICON_SYMBOLS` 取符号、挂到 `body`。
 只注入实际用到的 2 个（共 204 个符号），首屏不必为几百个图标付代价。
@@ -885,11 +910,11 @@ App            外壳：拉会话列表、持有 UI 开关、处理导航（只�
 把 `<svg>` 的属性（`viewBox` / `fill` / `stroke-width`）搬到 `<symbol>` 上，
 否则图标变成实心黑块。**新增官方组件时若图标空白，先来补符号。**
 
-**2. `labels` 必须引用稳定。** `MarkdownText` 的 `labels` 是必填 prop，
+**19. `labels` 必须引用稳定。** `MarkdownText` 的 `labels` 是必填 prop，
 且官方注释明确要求传引用稳定的对象——每次渲染新建会**丢弃流式渲染缓存**，
 长回复明显变卡。所以提到模块顶层 `markdown/labels.js` 并 `Object.freeze`。
 
-**3. 气泡的 `white-space: pre-wrap` 会毁掉 Markdown。** 用户手打换行要保留，
+**20. 气泡的 `white-space: pre-wrap` 会毁掉 Markdown。** 用户手打换行要保留，
 但 Markdown 渲染出的是块级元素，`pre-wrap` 会让每个换行符再多出一行空白。
 所以 `.markdown` 容器必须重置回 `normal`。
 

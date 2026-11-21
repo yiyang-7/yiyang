@@ -779,7 +779,7 @@ export function useChat(contact, activeConversationId) {
     // 没填（或连接失败）退回内置数据，保证演示永远不白屏。
     const key = getApiKey();
     if (key) {
-      const ok = await tryRealStream({ key, message, signal }, onFrame, {
+      const r = await tryRealStream({ key, message, signal }, onFrame, {
         conversationId, userId, contactId,</pre>
     </div><div class="card">
       <div class="card-head">
@@ -973,17 +973,10 @@ export function useChat(contact, activeConversationId) {
       </div><div class="artifact">
         <div class="a-icon">📦</div>
         <div>
-          <div class="a-name">森萝-debug.apk</div>
-          <div class="a-desc">Android 安装包（云端构建）</div>
-        </div>
-        <div class="a-size">5.70 MB</div>
-      </div><div class="artifact">
-        <div class="a-icon">📦</div>
-        <div>
           <div class="a-name">00028.docx</div>
           <div class="a-desc">设计文档，8 章 17424 字</div>
         </div>
-        <div class="a-size">32 KB</div>
+        <div class="a-size">35 KB</div>
       </div>
     </div>
     <div class="note">

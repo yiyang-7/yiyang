@@ -54,9 +54,24 @@ export function useChat(contact, activeConversationId) {
   // 流式回调是长生命周期的闭包，捕获的是发送那一刻的 conversationId。
   // 新对话的首条消息会在途中拿到真实 id，所以收尾时得读最新值。
   const conversationIdRef = useRef(null);
+  // 供异步回调里读取「最新」的 messages / sending：
+  // 拉历史是异步的，闭包里的 state 是旧快照，
+  // 直接拿它判断会把刚插入的消息误判成"不存在"。
+  const messagesRef = useRef([]);
+  const sendingRef = useRef(false);
+  // 非空表示该会话的历史加载要跳过（刚发出首条消息，本地已是最新）
+  const skipHistoryRef = useRef(null);
 
   // 保持 ref 与 state 同步。三处会 setConversationId（进会话 / 首条消息拿到 id / 新建），
   // 用 effect 统一同步能覆盖全部路径，比在每个调用点手写更不容易漏。
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    sendingRef.current = sending;
+  }, [sending]);
+
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
@@ -173,6 +188,16 @@ export function useChat(contact, activeConversationId) {
       };
     }
 
+    // 刚发出首条消息的会话：跳过拉历史，避免空历史覆盖本地消息
+    if (skipHistoryRef.current === activeConversationId) {
+      skipHistoryRef.current = null;
+      setConversationId(activeConversationId);
+      setLoadingHistory(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setConversationId(activeConversationId);
 
     // 告诉服务端「我进来了」。必须在拉历史之前发：
@@ -185,7 +210,28 @@ export function useChat(contact, activeConversationId) {
       try {
         const history = await fetchHistory(activeConversationId, userId);
         if (!cancelled) {
-          setMessages(history);
+          // 新一轮对话刚发出时，本地已经插入了用户消息 + AI 占位气泡，
+          // 而服务端此时的历史可能还是空的（或还没落库）。
+          // 直接用 history 覆盖会把刚发的消息抹掉——表现为
+          // 「在新对话里按发送，界面毫无反应」。
+          // 所以：本地已有消息且正在发送时，只合并、不覆盖。
+          const localOnly = messagesRef.current.filter(
+            (m) => String(m.id).startsWith('local-'),
+          );
+          setMessages((prev) => {
+            // 核心原则：history 为空时绝不覆盖。
+            // 空历史只说明「服务端还没有这个会话的记录」——
+            // 新对话的首条消息正是这种情况，此时本地消息才是真相。
+            if (history.length === 0 && prev.length > 0) {
+              return prev;
+            }
+            // 本地还有未落库的临时消息（local- 前缀）时合并保留，
+            // 避免拉历史的往返把正在进行的这一轮冲掉。
+            if (sendingRef.current && localOnly.length > 0) {
+              return [...history, ...localOnly];
+            }
+            return history;
+          });
           markSessionRead(activeConversationId, userId);
         }
       } catch (e) {
@@ -242,6 +288,10 @@ export function useChat(contact, activeConversationId) {
       let cid = conversationId;
       if (!cid) {
         cid = contact ? getConversationId(contact.id) : `conv-${Date.now()}`;
+        // 标记：这个会话的本地消息就是最新真相。
+        // 下面 dispatch hashchange 会让路由立刻更新并触发「拉历史」effect，
+        // 而那一刻服务端历史还是空的，覆盖回来就会把刚发的消息抹掉。
+        skipHistoryRef.current = cid;
         setConversationId(cid);
         // replaceState 不触发 hashchange，手动派发一次让路由同步，
         // 否则地址栏变了但界面还认为自己在「新对话」

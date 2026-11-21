@@ -2,11 +2,12 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import ChatInput from '../deepseek/ChatInput.jsx';
 import HistorySkeleton from './HistorySkeleton.jsx';
 import MessageBubble from '../MessageBubble.jsx';
-import { DeepSeekLogo, IconMenu, IconNewChat, IconSettings } from '../deepseek/icons.jsx';
+import { DeepSeekLogo, IconKey, IconMenu, IconNewChat, IconSettings } from '../deepseek/icons.jsx';
 import SettingsPanel from '../settings/SettingsPanel.jsx';
 import { formatClock, shouldShowTimestamp } from './messageTime.js';
 import QuickReplies, { deriveQuickReplies } from './QuickReplies.jsx';
-import { getAvatar, isImageAvatar, getName } from '../../services/settings.js';
+import { getApiKey, getAvatar, isImageAvatar, getName } from '../../services/settings.js';
+import { IS_DEMO } from '../../services/api.js';
 import styles from './ChatArea.module.css';
 
 /**
@@ -36,6 +37,17 @@ export default function ChatArea({
   // 用 state 而不是纯 ref —— 它要驱动渲染，ref 改了不会重渲染。
   const [awayFromBottom, setAwayFromBottom] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('api');
+  // 密钥状态要跟着设置面板的保存动作实时变，不能每次渲染都去读 localStorage
+  // （读到的是渲染时的快照，保存后不会重渲染）。关面板时刷新一次。
+  const [apiKey, setApiKeyState] = useState(() => getApiKey());
+  const refreshApiKey = () => setApiKeyState(getApiKey());
+
+  // 打开设置时指定落在哪一页：钥匙按钮进 API 页，齿轮进外观页。
+  const openSettings = (tab) => {
+    setSettingsTab(tab);
+    setSettingsOpen(true);
+  };
 
   const messages = chat.messages;
 
@@ -155,7 +167,15 @@ export default function ChatArea({
 
         <button
           className={styles.navBtn}
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => openSettings('api')}
+          aria-label="填 API 密钥"
+          title="填 API 密钥，换成真实模型回答"
+        >
+          <IconKey />
+        </button>
+        <button
+          className={styles.navBtn}
+          onClick={() => openSettings('avatar')}
           aria-label="设置"
         >
           <IconSettings />
@@ -218,6 +238,19 @@ export default function ChatArea({
 
         {chat.statusHint && <div className={styles.banner}>{chat.statusHint}</div>}
 
+        {/* 密钥状态条：没填就明确告诉用户现在看的是演示数据，
+            填了就显示已连接。否则用户会以为「AI 就只会说这几句」。 */}
+        {IS_DEMO && (
+          <div className={apiKey ? styles.keyBarOn : styles.keyBarOff}>
+            <span className={styles.keyBarText}>
+              {apiKey ? '已填入 API 密钥，将调用真实模型' : '当前为演示数据 · 填入 API 密钥可换成真实回答'}
+            </span>
+            <button className={styles.keyBarBtn} onClick={() => openSettings('api')}>
+              {apiKey ? '更换' : '去填写'}
+            </button>
+          </div>
+        )}
+
         {chat.error && (
           <div className={`${styles.banner} ${styles.bannerError}`}>
             <span className={styles.bannerText}>{chat.error}</span>
@@ -245,7 +278,12 @@ export default function ChatArea({
 
       <SettingsPanel
         open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
+        initialTab={settingsTab}
+        onClose={() => {
+          setSettingsOpen(false);
+          refreshApiKey();   // 关闭时同步密钥状态
+        }}
+        onSaved={refreshApiKey}
         contacts={contacts}
         activeContactId={contact?.id}
       />

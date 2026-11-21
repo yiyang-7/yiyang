@@ -16,6 +16,11 @@ page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 
 const step = (s) => console.log(`\n▶ ${s}`);
+let failures = 0;
+const check = (name, ok) => {
+  console.log(`  ${ok ? '✅' : '❌'} ${name}`);
+  if (!ok) failures++;
+};
 
 await page.goto('file:///root/森萝/演示版.html', { waitUntil: 'load' });
 await page.waitForTimeout(1500);
@@ -85,7 +90,28 @@ await page.screenshot({ path: '/tmp/shot-5-settings.png' });
 const setText = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
 console.log('  设置面板文本:', setText.slice(-300));
 
+
+console.log('\n⑦ 新对话首条消息（回归：曾经完全发不出去）');
+await page.goto('file:///root/森萝/演示版.html', { waitUntil: 'load' });
+await page.waitForTimeout(1500);
+const ta2 = page.locator('textarea').first();
+await ta2.click();
+await ta2.pressSequentially('在吗', { delay: 40 });
+await page.waitForTimeout(300);
+await page.locator('button[aria-label="发送"]').click();
+await page.waitForTimeout(3500);
+const bubblesNew = await page.locator('[class*="bubble"]').count();
+console.log('  新对话气泡数:', bubblesNew);
+check('新对话能发出消息并收到回复', bubblesNew >= 2);
+
 console.log('\n═══ JS 错误 ═══');
 console.log(errors.length === 0 ? '  ✅ 全程无错误' : errors.map((e) => '  ❌ ' + e).join('\n'));
 
 await browser.close();
+
+const total = failures + errors.length;
+if (total > 0) {
+  console.log(`\n❌ ${failures} 项断言失败，${errors.length} 个 JS 错误`);
+  process.exit(1);
+}
+console.log('\n✅ 交互流程全部通过');

@@ -185,13 +185,16 @@ export async function streamChat(
     // 没填（或连接失败）退回内置数据，保证演示永远不白屏。
     const key = getApiKey();
     if (key) {
-      const ok = await tryRealStream({ key, message, signal }, onFrame, {
+      const r = await tryRealStream({ key, message, signal }, onFrame, {
         conversationId, userId, contactId,
       });
-      if (ok) return;
-      // 退回演示数据，但先告诉用户为什么
+      if (r.ok) return;
+
+      // 真连失败 → 明确告诉用户原因，再退回演示数据。
+      // 关键：不能假装成功。用户填了密钥却看到演示回答，
+      // 却不知道是余额不足还是密钥错了，那才是最糟的体验。
       onFrame('notice', {
-        text: '连接官方接口失败（可能是跨域限制或网络问题），已切换为演示回复。',
+        text: `真实模型调用失败：${explainApiError(r.status, r.detail)}（已临时用演示回复顶上）`,
       });
     }
     return demoStreamChat({ message, signal, regenerate }, onFrame);
@@ -408,7 +411,18 @@ async function tryRealStream({ key, message, signal }, onFrame, meta) {
     });
 
     if (!res.ok || !res.body) {
-      return false;
+      // 把 HTTP 状态和官方错误原文带出去。
+      // 不同原因的处理完全不同：
+      //   401 → 密钥填错
+      //   402 → 余额不足（这正是「没额度就没回答」的真实原因）
+      //   429 → 请求太频繁
+      // 静默退回演示数据会让用户以为"AI 就只会说这几句"。
+      let detail = '';
+      try {
+        const j = await res.json();
+        detail = j?.error?.message || '';
+      } catch {}
+      return { ok: false, status: res.status, detail };
     }
 
     onFrame('ready', {
@@ -459,8 +473,18 @@ async function tryRealStream({ key, message, signal }, onFrame, meta) {
 
     // 与真后端一致：done 帧带完整正文，避免气泡被判定为空而删除
     onFrame('done', { text: full, assistantMessageId: null });
-    return true;
-  } catch {
-    return false;
+    return { ok: true };
+  } catch (e) {
+    if (e?.name === 'AbortError') throw e;   // 用户主动停止，不算失败
+    return { ok: false, status: 0, detail: e?.message || '网络请求失败' };
   }
+}
+
+/** 把失败原因翻译成人话 */
+function explainApiError(status, detail) {
+  if (status === 401) return 'API 密钥无效，请检查是否填错或已失效。';
+  if (status === 402) return '账户余额不足，无法调用模型。请到 DeepSeek 官网充值后重试。';
+  if (status === 429) return '请求过于频繁，稍等一下再试。';
+  if (status === 0) return `网络请求失败：${detail}`;
+  return detail ? `接口返回 ${status}：${detail}` : `接口返回 ${status}。`;
 }

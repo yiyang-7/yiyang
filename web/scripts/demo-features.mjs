@@ -185,8 +185,11 @@ check('生成头像带渐变背景', generated.includes('linear-gradient'));
 // ── 设置面板 ───────────────────────────────────
 console.log('\n设置面板:');
 const contacts = d.demoFetchContacts();
+// 默认打开落在「API 密钥」页（最需要被找到的入口），
+// 所以测外观页要显式指定 initialTab。
 const setHtml = m.settings({
   open: true,
+  initialTab: 'avatar',
   onClose: () => {},
   contacts,
   activeContactId: 'coder',
@@ -196,8 +199,7 @@ check('渲染出 emoji 选择区', setHtml.includes('🐱'));
 check('有 API 密钥入口', setHtml.includes('API 密钥'));
 check('有选本地图片按钮', setHtml.includes('选本地图片'));
 check('有昵称输入', setHtml.includes('昵称'));
-// API 提示在「API 密钥」标签页里，默认标签是「角色外观」，
-// 所以这条要直接查源码而不是渲染结果。
+// 跨域提示文案在「API 密钥」页里，直接查源码更稳。
 const src = readFileSync('src/components/settings/SettingsPanel.jsx', 'utf8');
 check('明确提示密钥只存本机', src.includes('只保存在这台设备'));
 check('提示浏览器跨域限制', src.includes('跨域'));

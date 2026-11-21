@@ -656,6 +656,69 @@ children.push(
   Rich('修法是把声明移到使用之前。同时补上**浏览器烟测**：用真实 chromium 加载产物，断言 `#root` 有子节点、无 JS 错误、有可见文本。这类“白屏”问题只有真浏览器能发现。'),
 );
 
+children.push(H3('坑：用会话 id 做 React key，吃掉了新对话的首条消息'));
+children.push(
+  Rich('这是**影响最大、也最难查的一个**。现象：在新对话页输入文字按发送，输入框被清空，地址栏变成 `#/chat/xxx`，但**界面上什么反应都没有**——没有用户气泡，没有 AI 回复。而如果先点进一个历史会话再发消息，一切正常。'),
+);
+children.push(
+  Rich('第一反应是发送逻辑坏了，但逐步打点后看到：`send` 进来了、消息也插进 state 了，只是下一帧就没了。真正的链条是：'),
+);
+children.push(
+  ...Code(
+    `发送 → setConversationId(新id) + 手动 dispatch('hashchange')
+     → 路由更新，conversationId 从 null 变成 "default-xxx"
+     → App 的 key = \`\${conversationId}:\${contactId}\` 变了
+     → <App> 整个卸载重建，useChat 的 messages 被重置为 []
+     → 刚插入的消息消失`,
+    '消息被吃掉的链条',
+  ),
+);
+children.push(
+  Rich('这个 `key` 当初是为了「切会话时重建状态、不串历史」才加的，本身没错。错在把**自动分配的 id** 和**用户主动切换**混为一谈：新对话发首条消息时 id 从无到有，这不该算作「切了会话」。'),
+);
+children.push(
+  Rich('修法是引入「粘性会话 id」：记住某个 id 是刚从新对话自动分配的，它就不参与 key 计算，等用户真正切到别的会话时再换 key。'),
+);
+children.push(
+  Rich('**为什么之前没发现**：所有测试都是在已有会话里发送，从没测过「打开页面直接发第一条消息」。而这恰恰是**每个用户第一次使用时的唯一路径**。教训是测试要覆盖「首次使用」的冷启动路径，而不只是顺手能跑通的热路径。'),
+);
+
+children.push(H3('坑：拉历史用空数组覆盖了刚发出的消息'));
+children.push(
+  Rich('在查上一条时发现的第二个叠加问题。拉历史的 effect 依赖 `conversationId`，它一变化就会重新请求历史；而新会话在服务端还没有记录，返回的是空数组 `[]`，然后无条件 `setMessages(history)` —— 把本地刚插入的消息直接抹掉。'),
+);
+children.push(
+  Rich('修法确立一条原则：**history 为空时绝不覆盖本地状态**。空历史只能说明「服务端还没有记录」，不能说明「本地这些消息是错的」。同时保留本地 `local-` 前缀的临时消息，避免往返请求冲掉正在进行的这一轮。'),
+);
+
+children.push(H3('坑：把「跨域被拦」当成事实写进文档'));
+children.push(
+  Rich('这个错误更有意思——**它不是代码 bug，是认知 bug**。设计文档里一直写着「浏览器直接调用 DeepSeek 接口属于跨域请求，官方接口通常不放行，需要一个转发服务」。基于这个判断，代码里的真实调用被设计成「失败就静默退回演示数据」。'),
+);
+children.push(
+  Rich('直到实测才发现判断是错的：'),
+);
+children.push(
+  ...Code(
+    `curl -X OPTIONS https://api.deepseek.com/chat/completions \
+  -H "Origin: null" -H "Access-Control-Request-Method: POST"
+
+→ access-control-allow-origin: null
+  access-control-allow-methods: POST
+  access-control-allow-headers: authorization,content-type`,
+    '实测响应头',
+  ),
+);
+children.push(
+  Rich('**官方接口是放行跨域的**，而且 `allow-origin: null` 正对 `file://` 页面的 `Origin`。也就是说，单文件网页填上有效密钥就能直接出真实回答，完全不需要转发服务。'),
+);
+children.push(
+  Rich('连带修正了一处体验缺陷：原来调用失败是静默退回演示数据，用户填了密钥却看到假回答，还以为是「AI 只会说这几句」。现在会明确告知原因——401 密钥无效、402 余额不足、429 频率过高——绝不假装成功。'),
+);
+children.push(
+  Rich('**教训**：没有实测过的技术判断不要写进文档当结论。一个未经验证的假设，会让整个架构朝着错误方向优化。'),
+);
+
 children.push(H2('5.3 UI 类'));
 
 children.push(H3('坑：移动端 100vh 与软键盘'));
