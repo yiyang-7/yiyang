@@ -82,7 +82,14 @@ export function isImageAvatar(v) {
  * 所以界面上必须明确提示「只存在这台设备上」。
  */
 export function getApiKey() {
-  return safe.get(K_API) || '';
+  // 构建时注入的内置密钥（仅用于「自己测试」的私人版本）。
+  // 正常构建里 DEMO_API_KEY 是空的，走不到这个分支；
+  // 源码里永远不出现真密钥，只有生成出来的 HTML 里有。
+  const fallback =
+    typeof import.meta !== 'undefined' && import.meta.env
+      ? import.meta.env.VITE_BUILTIN_API_KEY
+      : '';
+  return safe.get(K_API) || fallback || '';
 }
 
 export function setApiKey(v) {
@@ -144,3 +151,11 @@ export const AVATAR_EMOJIS = [
   '🤖', '🧑‍💻', '🧙', '🦉', '🌸', '⭐',
   '🎧', '📚', '🌙', '🍀', '💠', '🔮',
 ];
+/** 当前生效的密钥是否来自构建时内置（而非用户自己填的） */
+export function isBuiltinKey(v) {
+  const builtin =
+    typeof import.meta !== 'undefined' && import.meta.env
+      ? import.meta.env.VITE_BUILTIN_API_KEY
+      : '';
+  return Boolean(builtin) && v === builtin;
+}

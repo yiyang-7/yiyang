@@ -4,6 +4,7 @@ import {
   fileToAvatarDataUrl,
   getApiKey,
   getAvatar,
+  isBuiltinKey,
   getName,
   maskKey,
   setApiKey,
@@ -265,6 +266,7 @@ export default function SettingsPanel({ open, initialTab, onClose, onSaved, cont
 
               <p className={styles.small}>
                 当前：{key ? maskKey(key) : '未设置'}
+                {key && isBuiltinKey(key) && '（版本内置，清除后需重新填写）'}
               </p>
 
               <p className={styles.small}>
