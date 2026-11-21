@@ -16,7 +16,7 @@ const HOUR = 60 * MIN;
 
 // ── 联系人 ────────────────────────────────────
 export const CONTACTS = [
-  { id: 'default', name: 'DeepSeek', avatar: '', tagline: '通用助手' },
+  { id: 'default', name: 'lume', avatar: '', tagline: '通用助手' },
   { id: 'catgirl', name: '小橘', avatar: '', tagline: '猫娘 · 活泼' },
   { id: 'butler', name: '塞巴斯蒂安', avatar: '', tagline: '管家 · 克制' },
   { id: 'coder', name: 'Codex', avatar: '', tagline: '工程师 · 精确' },
@@ -46,7 +46,7 @@ export const SESSIONS = [
     conversationId: 'demo-think',
     contactId: 'default',
     title: '为什么天空是蓝色的',
-    name: 'DeepSeek',
+    name: 'lume',
     lastMessage: '瑞利散射：波长越短，散射越强。',
     lastAt: now - 5 * HOUR,
     unread: 0,

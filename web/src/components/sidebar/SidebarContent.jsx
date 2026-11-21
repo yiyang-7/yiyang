@@ -20,7 +20,7 @@ export default function SidebarContent({
     <>
       <div className={styles.brand}>
         <DeepSeekLogo size={22} />
-        <span className={styles.brandName}>DeepSeek</span>
+        <span className={styles.brandName}>lume</span>
       </div>
 
       <div className={styles.actions}>

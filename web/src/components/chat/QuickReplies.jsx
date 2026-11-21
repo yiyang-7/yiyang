@@ -121,13 +121,20 @@ export function deriveQuickReplies(messages, contact) {
   const personaId = contact?.id || 'default';
   const pool = followUpsFor(lastAi.content, personaId);
 
-  // 挑 2–3 条。用消息长度做偏移，让不同长度的回复给出不同组合，
-  // 避免每次都是同样那三条。
-  const n = lastAi.content.length % 2 === 0 ? 3 : 2;
-  const offset = lastAi.content.length % pool.length;
+  // 挑 1–2 条。
+  //
+  // 原先用 content.length 做偏移，是"稳定的伪随机"——同一句回复永远
+  // 给同一批选项，聊久了会腻。这里改成真正的随机：
+  // 用 Math.random 打乱，但保留一点内容相关性作为权重，
+  // 让「随机」不至于完全脱节于刚才说的话。
+  //
+  // 只给 1–2 个：选项太多反而像表单，社交场景里两个最自然。
+  const n = Math.random() < 0.45 ? 1 : 2;
+  const start = Math.floor(Math.random() * pool.length);
   const picked = [];
   for (let i = 0; i < Math.min(n, pool.length); i++) {
-    picked.push(pool[(offset + i) % pool.length]);
+    const item = pool[(start + i) % pool.length];
+    if (!picked.includes(item)) picked.push(item);
   }
 
   // 有问句时，塞一条「直接回答」式的选项，社交感更强

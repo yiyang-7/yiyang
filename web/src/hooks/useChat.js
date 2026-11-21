@@ -298,7 +298,7 @@ export function useChat(contact, activeConversationId) {
         window.history.replaceState(null, '', `#/chat/${encodeURIComponent(cid)}`);
         window.dispatchEvent(new HashChangeEvent('hashchange'));
       }
-      const activeContact = contact ?? { id: 'default', name: 'DeepSeek' };
+      const activeContact = contact ?? { id: 'default', name: 'lume' };
 
       const abort = new AbortController();
       abortRef.current = abort;
@@ -330,6 +330,14 @@ export function useChat(contact, activeConversationId) {
           content: trimmed,
           status: 'completed',
           createdAt: now,
+          // 引用回复：带上被引用消息的快照（只留渲染需要的字段，
+          // 不存整条消息，避免引用链越滚越大）
+          quoted: opts.quote
+            ? {
+                role: opts.quote.role,
+                content: opts.quote.content,
+              }
+            : null,
         },
         {
           id: localAssistantId,
@@ -647,6 +655,44 @@ export function useChat(contact, activeConversationId) {
     return send(userMsg.content, replaceFrom ? { replaceFrom } : {});
   }, [messages, sending, send]);
 
+  /**
+   * 撤回一条自己发的消息（微信式）：从列表移除，并把原文交回去让输入框重新填充，
+   * 方便用户改一改再发。只对本地列表生效——后端历史已落库的记录不追删。
+   */
+  const recallMessage = useCallback((id) => {
+    // 同步读当前消息再决定删什么：
+    // setMessages 的 updater 可能在 StrictMode 下被调用两次，
+    // 在里面产生副作用（记 recalled）不可靠。
+    const prev = messagesRef.current;
+    const idx = prev.findIndex((m) => m.id === id);
+    if (idx === -1) return null;
+    const target = prev[idx];
+
+    setMessages(() => {
+      const next = [...prev];
+      // 连同紧随其后的 AI 回复一起移除：只撤用户那句，
+      // 会留下一条没有提问的回答，看起来很怪。
+      next.splice(idx, prev[idx + 1]?.role === 'assistant' ? 2 : 1);
+      return next;
+    });
+    return target;
+  }, []);
+
+  /**
+   * 给某条消息挂一个表情回应（微信式的"双击回应"）。
+   * 纯本地状态：这是社交趣味功能，不需要后端也能有反馈。
+   * 同一条消息按同一个表情 = 取消回应。
+   */
+  const reactToMessage = useCallback((id, emoji) => {
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m;
+        const cur = m.reaction;
+        return { ...m, reaction: cur === emoji ? null : emoji };
+      }),
+    );
+  }, []);
+
   /** 开始新对话 */
   const startNewChat = useCallback(() => {
     if (!contact) return;
@@ -677,6 +723,8 @@ export function useChat(contact, activeConversationId) {
     send,
     stop,
     regenerate,
+    reactToMessage,
+    recallMessage,
     startNewChat,
     clearError: () => setError(null),
   };

@@ -405,7 +405,18 @@ async function tryRealStream({ key, message, signal }, onFrame, meta) {
       body: JSON.stringify({
         model: 'deepseek-chat',
         stream: true,
-        messages: [{ role: 'user', content: message }],
+        messages: [
+          // 身份设定：底层模型是 DeepSeek，但界面上这个助手叫 lume。
+          // 不加这条，用户问"你是谁"会得到"我是 DeepSeek"，
+          // 与界面品牌对不上，显得很割裂。
+          {
+            role: 'system',
+            content:
+              '你叫 lume，是一个温暖、细腻的对话伙伴。用户问起你的身份时，' +
+              '就以 lume 自称，不要提及底层模型或厂商。回答简洁自然，像朋友聊天。',
+          },
+          { role: 'user', content: message },
+        ],
       }),
       signal,
     });

@@ -105,7 +105,17 @@ const msgList = [
   },
 ];
 const replies = m.deriveQuickReplies(msgList, { id: 'default' });
-check('能推出 2–3 条建议', replies.length >= 2 && replies.length <= 3, replies.join(' / '));
+// 改成随机后是 1–2 条（社交场景里两个最自然，多了像表单）。
+// 多跑几次覆盖随机分支，避免只碰巧抽到 2 条。
+let minSeen = 99;
+let maxSeen = 0;
+for (let i = 0; i < 40; i++) {
+  const r = m.deriveQuickReplies(msgList, { id: 'default' });
+  minSeen = Math.min(minSeen, r.length);
+  maxSeen = Math.max(maxSeen, r.length);
+}
+check('建议条数在 1–2 之间', minSeen >= 1 && maxSeen <= 2, `观察到 ${minSeen}–${maxSeen}`);
+check('建议条数确实会随机变化', minSeen !== maxSeen, `${minSeen}–${maxSeen}`);
 check('建议都是非空字符串', replies.every((r) => typeof r === 'string' && r.trim()));
 
 // 不同人设语气不同
@@ -121,8 +131,17 @@ const codeList = [
   { id: 'a', role: 'user', content: '写代码', status: 'completed' },
   { id: 'b', role: 'assistant', content: '```js\nconst a = 1;\n```', status: 'completed' },
 ];
-const codeReplies = m.deriveQuickReplies(codeList, { id: 'default' });
-check('代码回复给代码向建议', codeReplies.length >= 2, codeReplies.join(' / '));
+// 条数是随机的（1–2），所以这里验证的是「内容方向对不对」，
+// 而不是条数。多抽几次，只要有一次命中代码向建议即算通过。
+const codeSamples = [];
+for (let i = 0; i < 30; i++) {
+  codeSamples.push(...m.deriveQuickReplies(codeList, { id: 'default' }));
+}
+check(
+  '代码回复给出代码向建议',
+  codeSamples.some((r) => /代码|报错|优化|解释|这段/.test(r)),
+  [...new Set(codeSamples)].slice(0, 4).join(' / '),
+);
 
 // 最后一条是用户消息时不应有建议
 const pending = [

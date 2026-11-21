@@ -66,6 +66,27 @@
   height: 5px;
   border-radius: 50%;
   background: #07c160;
+  /* 脉冲：用 box-shadow 扩散而不是改尺寸，
+     尺寸变化会引起周围文字重排抖动 */
+  animation: onlinePulse 2s ease-out infinite;
+}
+
+@keyframes onlinePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(7, 193, 96, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(7, 193, 96, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(7, 193, 96, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onlineDot {
+    animation: none;
+  }
 }
 
 /* ── 对话区（微信气泡风，浅灰底） ─────────────── */
@@ -351,4 +372,116 @@
 
 .keyBarBtn:active {
   transform: scale(0.96);
+}
+
+/* ── 引用条（长按气泡后出现在输入框上方） ───────── */
+.quoteBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 6px;
+  padding: 7px 12px;
+  border-left: 3px solid #4d6bfe;
+  border-radius: 6px;
+  background: #f2f3f5;
+  font-size: 12.5px;
+  color: #4b5563;
+  animation: quoteBarIn 0.2s ease-out both;
+}
+
+@keyframes quoteBarIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quoteBarText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quoteBarClose {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #9aa3b2;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+/* ── 双击表情选择器 ───────────────────────────── */
+.reactPicker {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+  animation: reactPickerIn 0.22s cubic-bezier(0.34, 1.5, 0.64, 1) both;
+}
+
+@keyframes reactPickerIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.85) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+
+.reactBtn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.14s ease, background 0.14s ease;
+}
+
+.reactBtn:hover {
+  background: #f2f3f5;
+  transform: scale(1.18);
+}
+
+.reactBtn:active {
+  transform: scale(0.92);
+}
+
+.reactCancel {
+  width: 30px;
+  height: 30px;
+  margin-left: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: #f2f3f5;
+  color: #9aa3b2;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quoteBar,
+  .reactPicker {
+    animation: none;
+  }
 }

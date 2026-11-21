@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   IconGlobe,
   IconMic,
@@ -29,11 +29,22 @@ export default function ChatInput({
   onToggleDeepThink,
   webSearch,
   onToggleWebSearch,
+  draft,
+  onDraftUsed,
 }) {
   const [text, setText] = useState('');
   const [attachment, setAttachment] = useState(null);
   const ref = useRef(null);
   const fileRef = useRef(null);
+
+  // 外部塞进来的草稿（撤回后回填）。用 effect 而不是初始值，
+  // 因为同一个输入框会被多次塞草稿。
+  useEffect(() => {
+    if (draft == null) return;
+    setText(draft);
+    onDraftUsed?.();
+    requestAnimationFrame(() => ref.current?.focus());
+  }, [draft, onDraftUsed]);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -89,7 +100,7 @@ export default function ChatInput({
           className={styles.input}
           rows={1}
           value={text}
-          placeholder={sending ? '正在回复…' : '给 DeepSeek 发送消息'}
+          placeholder={sending ? '正在回复…' : '给 lume 发送消息'}
           enterKeyHint="send"
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}

@@ -243,7 +243,7 @@ const aiLogo = m.bubble({
 const userB = m.bubble({
   message: { id: 'u', role: 'user', content: '嗨', status: 'completed' },
 });
-check('AI 用 DeepSeek Logo 头像', aiLogo.includes('aria-label="DeepSeek"'));
+check('AI 用 lume Logo 头像', aiLogo.includes('aria-label="lume"'));
 check('AI 在左（bubbleLeft）', aiLogo.includes('bubbleLeft'));
 check('AI 白气泡（不含 bubbleUser）', !aiLogo.includes('bubbleUser'));
 check('用户在右（bubbleRight）', userB.includes('bubbleRight'));

@@ -19,7 +19,7 @@ const base = (size) => ({
 });
 
 /** DeepSeek 品牌鲸鱼标识（简化几何版本） */
-export function DeepSeekLogo({ size = 24, color = '#4D6BFE' }) {
+export function LumeLogo({ size = 24, color = '#4D6BFE' }) {
   return (
     <svg
       width={size}
@@ -27,22 +27,21 @@ export function DeepSeekLogo({ size = 24, color = '#4D6BFE' }) {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="DeepSeek"
+      aria-label="lume"
     >
       <circle cx="12" cy="12" r="11" fill={color} />
-      <path
-        d="M6.2 10.6c1.1-1.9 3.1-3.1 5.4-3.1 1 0 1.9.2 2.7.6-1.4.3-2.6 1.1-3.4 2.2.9-.4 1.9-.6 2.9-.5-1.8.6-3.2 2-3.8 3.8-.2.6-.3 1.2-.3 1.8h-1.5c-.2-2 .3-3.9 1.5-5.4-1 .5-1.9 1.3-2.5 2.3l-1-.7z"
-        fill="#fff"
-      />
-      <circle cx="14.6" cy="9.4" r=".95" fill="#fff" />
-      <path
-        d="M16.8 13.2c1.2.2 2.2 1 2.7 2.1-1.5.5-3.1.5-4.6 0 .4-.9 1-1.6 1.9-2.1z"
-        fill="#fff"
-        opacity=".72"
-      />
+      {/* 一颗居中的光点，外面一圈更淡的光晕 —— "lume" 取微光之意 */}
+      <circle cx="12" cy="12" r="3.1" fill="#fff" />
+      <circle cx="12" cy="12" r="5.6" stroke="#fff" strokeOpacity=".55" strokeWidth="1.1" />
+      <circle cx="12" cy="12" r="8.3" stroke="#fff" strokeOpacity=".26" strokeWidth="1" />
+      <circle cx="17.4" cy="6.4" r="1.05" fill="#fff" fillOpacity=".9" />
     </svg>
   );
 }
+
+/** 兼容旧名，避免一次性改太多调用点 */
+export const DeepSeekLogo = LumeLogo;
+
 
 /** 汉堡菜单 */
 export function IconMenu({ size = 22 }) {

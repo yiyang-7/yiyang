@@ -6,6 +6,9 @@ import { DeepSeekLogo, IconKey, IconMenu, IconNewChat, IconSettings } from '../d
 import SettingsPanel from '../settings/SettingsPanel.jsx';
 import { formatClock, shouldShowTimestamp } from './messageTime.js';
 import QuickReplies, { deriveQuickReplies } from './QuickReplies.jsx';
+
+/** 双击回应可选的短表情（微信那排） */
+const REACT_EMOJIS = ['😄', '😂', '😍', '👍', '🎉', '🤔'];
 import { getApiKey, getAvatar, isImageAvatar, getName } from '../../services/settings.js';
 import { IS_DEMO } from '../../services/api.js';
 import styles from './ChatArea.module.css';
@@ -40,6 +43,13 @@ export default function ChatArea({
   const [settingsTab, setSettingsTab] = useState('api');
   // 密钥状态要跟着设置面板的保存动作实时变，不能每次渲染都去读 localStorage
   // （读到的是渲染时的快照，保存后不会重渲染）。关面板时刷新一次。
+  // 引用中的消息（微信式长按引用）
+  const [quoting, setQuoting] = useState(null);
+  // 撤回后回填到输入框的草稿
+  const [draft, setDraft] = useState(null);
+  // 双击后要挂表情的消息 id（null = 没在选）
+  const [reactingTo, setReactingTo] = useState(null);
+
   const [apiKey, setApiKeyState] = useState(() => getApiKey());
   const refreshApiKey = () => setApiKeyState(getApiKey());
 
@@ -211,6 +221,13 @@ export default function ChatArea({
                   pendingLabel={chat.pendingLabel}
                   showActions={i === lastAiIndex && !chat.sending}
                   onRegenerate={chat.regenerate}
+                  onReact={(id) => setReactingTo((cur) => (cur === id ? null : id))}
+                  onQuote={(m) => setQuoting(m)}
+                  onRecall={(m) => {
+                    const back = chat.recallMessage(m.id);
+                    // 撤回后把原文交给输入框，用户改一改就能重发
+                    if (back) setDraft(back.content);
+                  }}
                 />
               </Fragment>
             ))
@@ -266,8 +283,31 @@ export default function ChatArea({
           visible={!chat.sending && !chat.loadingHistory && !chat.error}
         />
 
+        {/* 引用条：长按气泡后出现在输入框上方，微信的位置 */}
+        {quoting && (
+          <div className={styles.quoteBar}>
+            <span className={styles.quoteBarText}>
+              引用{quoting.role === 'user' ? '我' : '对方'}：
+              {(quoting.content || '').replace(/\s+/g, ' ').slice(0, 30)}
+            </span>
+            <button
+              className={styles.quoteBarClose}
+              onClick={() => setQuoting(null)}
+              aria-label="取消引用"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <ChatInput
-          onSend={chat.send}
+          draft={draft}
+          onDraftUsed={() => setDraft(null)}
+          onSend={(text) => {
+            // 引用时把被引用的内容一起带上，渲染成引用块
+            chat.send(text, quoting ? { quote: quoting } : undefined);
+            setQuoting(null);
+          }}
           onStop={chat.stop}
           sending={chat.sending}
           deepThink={deepThink}
@@ -275,6 +315,31 @@ export default function ChatArea({
           webSearch={webSearch}
           onToggleWebSearch={onToggleWebSearch}
         />
+
+      {/* 双击气泡后弹出的表情选择器 */}
+      {reactingTo && (
+        <div className={styles.reactPicker} role="dialog" aria-label="选择表情回应">
+          {REACT_EMOJIS.map((e) => (
+            <button
+              key={e}
+              className={styles.reactBtn}
+              onClick={() => {
+                chat.reactToMessage(reactingTo, e);
+                setReactingTo(null);
+              }}
+            >
+              {e}
+            </button>
+          ))}
+          <button
+            className={styles.reactCancel}
+            onClick={() => setReactingTo(null)}
+            aria-label="取消"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <SettingsPanel
         open={settingsOpen}
@@ -303,7 +368,7 @@ export default function ChatArea({
         <div className={styles.welcomeLogo}>
           <DeepSeekLogo size={46} />
         </div>
-        <h1 className={styles.welcomeTitle}>我是 DeepSeek，很高兴见到你！</h1>
+        <h1 className={styles.welcomeTitle}>我是 lume，很高兴见到你！</h1>
         <p className={styles.welcomeSub}>我可以帮你写代码、读文件、查资料，随时提问</p>
 
         <div className={styles.suggestions}>

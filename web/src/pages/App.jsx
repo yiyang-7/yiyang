@@ -70,7 +70,7 @@ export default function App({ conversationId, contact, contacts = [], onPickCont
 
   // 标题优先用自定义昵称（设置里可改），没改则用内置名字
   const customName = contact?.id ? getName(contact.id) : '';
-  const title = chat.messages.length > 0 ? (customName || contact?.name || 'DeepSeek') : '新对话';
+  const title = chat.messages.length > 0 ? (customName || contact?.name || 'lume') : '新对话';
   // 顶栏副标题：AI 生成中显示「对方正在输入...」，空闲显示在线状态
   const subtitle = chat.sending ? '对方正在输入...' : '在线';
 

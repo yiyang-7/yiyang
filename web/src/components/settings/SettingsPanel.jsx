@@ -225,7 +225,7 @@ export default function SettingsPanel({ open, initialTab, onClose, onSaved, cont
           {tab === 'api' && (
             <>
               <p className={styles.note}>
-                填自己的 DeepSeek API 密钥后，这个页面就能直接调用模型。
+                填入模型服务的 API 密钥后，这个页面就能直接调用真实模型。
                 密钥<strong>只保存在这台设备的浏览器里</strong>，不会上传到任何服务器。
               </p>
 
@@ -270,7 +270,7 @@ export default function SettingsPanel({ open, initialTab, onClose, onSaved, cont
               </p>
 
               <p className={styles.small}>
-                没有密钥？到 platform.deepseek.com 注册后在「API keys」里创建。
+                没有密钥？到 platform.deepseek.com 注册后在「API keys」里创建（本项目接的是 DeepSeek 接口）。
               </p>
               <p className={styles.note}>
                 <strong>实测可用</strong>：DeepSeek 官方接口已放行浏览器跨域请求

@@ -33,6 +33,9 @@ export default function MessageBubble({
   pendingLabel,
   showActions = false,
   onRegenerate,
+  onReact,
+  onQuote,
+  onRecall,
 }) {
   const isUser = message.role === 'user';
   // 两种写法都认：数据库里是 status 字段，前端占位气泡用 isStreaming 更直观
@@ -49,7 +52,7 @@ export default function MessageBubble({
   return (
     <div className={`${styles.row} ${isUser ? styles.rowUser : ''}`}>
       {!isUser && useLogo ? (
-        <div className={styles.avatar} title={contactName || 'DeepSeek'}>
+        <div className={styles.avatar} title={contactName || 'lume'}>
           <DeepSeekLogo size={38} />
         </div>
       ) : (
@@ -62,10 +65,18 @@ export default function MessageBubble({
       )}
 
       <div className={`${styles.col} ${isUser ? styles.colUser : ''}`}>
+        {message.quoted && <QuoteBlock quoted={message.quoted} isUser={isUser} />}
         <div
           className={`${styles.bubble} ${
             isUser ? `${styles.bubbleUser} ${styles.bubbleRight}` : `${styles.bubbleLeft}`
           }`}
+          onDoubleClick={() => onReact?.(message.id)}
+          onContextMenu={(e) => {
+            // 长按 / 右键 = 引用这条消息
+            if (!onQuote) return;
+            e.preventDefault();
+            onQuote(message);
+          }}
         >
           {/* 思考面板在正文上方，气泡内部（不跨出白底） */}
           {hasThinking && (
@@ -78,9 +89,14 @@ export default function MessageBubble({
 
           {empty && streaming && !hasThinking ? (
             <span className={styles.pending}>
-              {/* 状态点用官方 StateDot：ongoing 是 14px 旋转 loading，
-                  动画挂载时间对齐文档时间零点，多处 loading 同相 */}
-              <StateDot state="ongoing" />
+              {/* 三点交错跳动，模仿微信「对方正在输入」。
+                  只用 CSS 关键帧，不占 JS 主线程——
+                  打字机本来就在跑 16ms 定时器，再加 JS 动画会抢帧。 */}
+              <span className={styles.typing} aria-hidden="true">
+                <span className={styles.typingDot} />
+                <span className={styles.typingDot} />
+                <span className={styles.typingDot} />
+              </span>
               <span className={styles.pendingText}>{pendingLabel || '正在输入...'}</span>
             </span>
           ) : hasThinking && empty ? (
@@ -109,6 +125,23 @@ export default function MessageBubble({
         {failed && (
           <div className={`${styles.meta} ${styles.metaError}`}>
             {message.status === 'interrupted' ? '未完成' : '发送失败'}
+          </div>
+        )}
+
+        {/* 表情回应：贴在气泡外侧下沿，微信的形态。
+            用 key 触发一次弹入动画——同一位置换表情时也能再弹一下。 */}
+        {message.reaction && (
+          <span key={message.reaction} className={styles.reaction} title="双击可更换">
+            {message.reaction}
+          </span>
+        )}
+
+        {/* 用户消息：已送达 / 撤回，微信的位置（气泡左下方小字） */}
+        {isUser && message.status === 'completed' && onRecall && !streaming && (
+          <div className={styles.receipt}>
+            <button className={styles.recallBtn} onClick={() => onRecall(message)}>
+              撤回
+            </button>
           </div>
         )}
 
@@ -242,6 +275,20 @@ function Avatar({ seed, emoji, name, image }) {
       >
         {initial}
       </span>
+    </div>
+  );
+}
+
+/**
+ * 引用块：显示在气泡内部上方，微信「引用回复」的形态。
+ * 只取原文前 40 字，避免长消息把气泡撑高。
+ */
+function QuoteBlock({ quoted, isUser }) {
+  const text = (quoted.content || '').replace(/\s+/g, ' ').slice(0, 40);
+  return (
+    <div className={`${styles.quote} ${isUser ? styles.quoteUser : ''}`}>
+      <span className={styles.quoteName}>{quoted.role === 'user' ? '我' : '对方'}</span>
+      <span className={styles.quoteText}>{text || '（空消息）'}</span>
     </div>
   );
 }

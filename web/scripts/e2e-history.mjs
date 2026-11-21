@@ -109,7 +109,7 @@ check('用户消息不解析 Markdown', !html[0].includes('<ol'));
 
 check('助手消息在左侧白泡', html[1].includes('bubbleLeft'));
 check('助手正文走 Markdown', html[1].includes('<ol'), '有序列表被渲染');
-check('助手有自己的 Logo', html[1].includes('aria-label="DeepSeek"'));
+check('助手有自己的 Logo', html[1].includes('aria-label="lume"'));
 
 console.log('\n③ 思考面板随数据出现');
 check('带思考的消息有面板', html[1].includes('data-disclosure-row="true"'));

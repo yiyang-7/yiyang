@@ -11,7 +11,7 @@
     "test:stream": "node scripts/e2e-streaming.mjs",
     "test:reasoning": "node scripts/e2e-reasoning.mjs",
     "test:history": "node scripts/e2e-history.mjs",
-    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs && node scripts/demo-test.mjs && node scripts/demo-features.mjs && node scripts/verify-demo.mjs",
+    "test": "node scripts/render-app.mjs && node scripts/e2e-streaming.mjs && node scripts/e2e-reasoning.mjs && node scripts/e2e-history.mjs && node scripts/mobile-layout.mjs && node scripts/demo-test.mjs && node scripts/demo-features.mjs && node scripts/verify-demo.mjs && node scripts/test-fun.mjs",
     "test:mobile": "node scripts/mobile-layout.mjs",
     "android:sync": "vite build && cap sync android",
     "android:open": "cap open android",
@@ -19,7 +19,8 @@
     "build:demo": "VITE_DEMO=1 vite build && node scripts/build-demo.mjs",
     "test:demo": "node scripts/demo-test.mjs",
     "test:browser": "node scripts/verify-demo.mjs",
-    "test:flow": "node scripts/test-demo-flow.mjs"
+    "test:flow": "node scripts/test-demo-flow.mjs",
+    "test:fun": "node scripts/test-fun.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",

@@ -3,6 +3,8 @@
   align-items: flex-start;
   gap: 10px;
   padding: 5px 14px;
+  /* 表情回应用 absolute 贴在气泡外沿，需要这里作定位参照 */
+  position: relative;
   /* 消息多时不要因为动画堆叠导致滚动卡顿 */
   contain: layout style;
 }
@@ -338,5 +340,191 @@
   .rowUser,
   .avatar {
     animation: none;
+  }
+}
+
+/* ── 消息入场：滑入 + 轻微回弹 ────────────────────
+   参考官方 App 的节奏：位移不大（8-10px），
+   用带过冲的缓动制造"弹"的手感，而不是线性滑入。
+   时长控制在 260ms 内，连续来消息时不会显得拖沓。 */
+.row {
+  animation: bubbleIn 0.26s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── 头像呼吸 ──────────────────────────────────
+   极缓慢的缩放 + 光晕，让"对方"看起来是活的。
+   周期 3.2s，幅度只有 2%，远看是静态，盯久了能感觉到。 */
+.avatar {
+  animation: avatarBreath 3.2s ease-in-out infinite;
+}
+
+@keyframes avatarBreath {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(77, 107, 254, 0);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(77, 107, 254, 0.08);
+  }
+}
+
+/* 用户自己的头像不呼吸，避免两边一起动显得吵 */
+.rowUser .avatar {
+  animation: none;
+}
+
+/* ── 输入中三点 ─────────────────────────────── */
+.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.typingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9aa3b2;
+  animation: typingBounce 1.3s ease-in-out infinite;
+}
+
+.typingDot:nth-child(1) { animation-delay: 0s; }
+.typingDot:nth-child(2) { animation-delay: 0.16s; }
+.typingDot:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .avatar,
+  .typingDot {
+    animation: none;
+  }
+}
+
+/* ── 引用块（微信「引用回复」形态） ─────────────── */
+.quote {
+  max-width: 78%;
+  margin: 0 0 4px 46px;
+  padding: 6px 10px;
+  border-left: 3px solid #c9ced8;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.quoteUser {
+  margin-left: 0;
+  margin-right: 46px;
+  align-self: flex-end;
+  border-left-color: #a8c97a;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.quoteName {
+  color: #6b7280;
+  margin-right: 6px;
+}
+
+.quoteText {
+  color: #4b5563;
+}
+
+/* ── 表情回应 ─────────────────────────────────── */
+.reaction {
+  position: absolute;
+  bottom: -12px;
+  /* 对齐 AI 侧气泡左沿（头像 38px + 间距 10px - 微调） */
+  left: 44px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  font-size: 15px;
+  line-height: 1.35;
+  animation: reactionPop 0.28s cubic-bezier(0.34, 1.6, 0.64, 1) both;
+}
+
+/* 用户消息在右侧，表情镜像到右边 */
+.rowUser .reaction {
+  left: auto;
+  right: 14px;
+}
+
+@keyframes reactionPop {
+  from {
+    opacity: 0;
+    transform: scale(0.4) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction {
+    animation: none;
+  }
+}
+
+/* ── 用户消息回执（已送达 / 撤回） ─────────────── */
+.receipt {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #9aa3b2;
+}
+
+.recallBtn {
+  border: 0;
+  background: transparent;
+  color: #9aa3b2;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  /* 平时半隐，鼠标移上去才明显——避免每条消息都挂一堆按钮 */
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.row:hover .recallBtn {
+  opacity: 1;
+}
+
+.recallBtn:hover {
+  color: #4d6bfe;
+}
+
+/* 触屏没有 hover，直接常显 */
+@media (hover: none) {
+  .recallBtn {
+    opacity: 0.75;
   }
 }
